@@ -1,5 +1,11 @@
-# sktools
+# sktools (SkatterTools)
+
 SkatterTools PowerShell Module
+
+# Overview
+
+  SkatterTools is a PowerShell module which provides an extension to PoSHServer to view and manage
+  Active Directory and System Center Configuration Manager sites from your web browser.
 
 # Install and Setup
 
