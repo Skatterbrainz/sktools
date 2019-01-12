@@ -9,7 +9,7 @@ $menulist = ""
 $tabset   = ""
 $pagelink = Split-Path -Leaf $MyInvocation.MyCommand.Definition
 
-$plist = @('General','BIOS','Computer','Disks','Events','Groups','Local Groups','Memory','Network','Operating System','Processor','Software','Startup','Updates','User Profiles','Tools')
+$plist = @('General','BIOS','Computer','Disks','Events - Application','Events - System','Groups','Local Groups','Memory','Network','Operating System','Processor','Software','Startup','Updates','User Profiles','Tools')
 $menulist = New-SkMenuList -PropertyList $plist -TargetLink "adcomputer.ps1?v=$Script:SearchValue" -Default $Script:TabSelected
 $tabset   = $menulist
 
@@ -70,15 +70,67 @@ switch ($Script:TabSelected) {
         }
         break;
     }
-    'Events' {
-        $afterdate = (Get-Date).AddHours(-24)
+    'Events - Application' {
+        $limit = 50
+        $hrs = 24
+        $afterdate = (Get-Date).AddHours(-$hrs)
+        $logname = 'Application'
         try {
-            $sysevents = Get-EventLog -LogName System -ComputerName $Script:SearchValue -After $afterdate -EntryType Error -ErrorAction Stop
-            $appevents = Get-EventLog -LogName Application -ComputerName $Script:SearchValue -After $afterdate -EntryType Error -ErrorAction Stop
+            $sysevents = Get-EventLog -LogName $logname -ComputerName $Script:SearchValue -Newest $limit -EntryType Error -ErrorAction Stop
+            $sysevents = $sysevents | Where-Object {$_.TimeGenerated -gt $afterdate}
             $content = "<table id=table2>"
-            $content += "<tr><th>Event Log</th><th>Errors in last 24 hours</th></tr>"
-            $content += "<tr><td>System</td><td><td>$($sysevents.Count)</td></tr>"
-            $content += "<tr><td>Application</td><td><td>$($appevents.Count)</td></tr>"
+            $content += "<tr><th>Index</th><th>Time</th><th>Type</th><th>Category</th><th>Source</th><th>Message</th></tr>"
+            if ($sysevents.Count -gt 0) {
+                foreach ($event in $sysevents) {
+                    $content += "<tr>"
+                    $content += "<td>$($event.Index)</td>"
+                    $content += "<td>$($event.TimeGenerated)</td>"
+                    $content += "<td>$($event.EntryType)</td>"
+                    $content += "<td>$($event.Category)</td>"
+                    $content += "<td>$($event.Source)</td>"
+                    $content += "<td>$($event.Message)</td>"
+                    $content += "</tr>"
+                }
+                $content += "<tr><td colspan=`"6`" class=`"lastrow`">$($sysevents.Count) events</td></tr>"
+            }
+            else {
+                $content += "<tr><td colspan=`"6`"> No $logname error events were found in the last $hrs hours</td></tr>"
+            }
+            $content += "</table>"
+        }
+        catch {
+            if ($Error[0].Exception.Message -like "Access is denied*") {
+                $content = Get-WmiAccessError
+            }
+        }
+        break;
+    }
+    'Events - System' {
+        $limit = 50
+        $hrs = 24
+        $afterdate = (Get-Date).AddHours(-$hrs)
+        $logname = 'System'
+        try {
+            $sysevents = Get-EventLog -LogName $logname -ComputerName $Script:SearchValue -Newest $limit -EntryType Error -ErrorAction Stop
+            $sysevents = $sysevents | Where-Object {$_.TimeGenerated -gt $afterdate}
+            $content = "<table id=table2>"
+            $content += "<tr><th>Index</th><th>Time</th><th>Type</th><th>Category</th><th>Source</th><th>Message</th></tr>"
+            if ($sysevents.Count -gt 0) {
+                foreach ($event in $sysevents) {
+                    $content += "<tr>"
+                    $content += "<td>$($event.Index)</td>"
+                    $content += "<td>$($event.TimeGenerated)</td>"
+                    $content += "<td>$($event.EntryType)</td>"
+                    $content += "<td>$($event.Category)</td>"
+                    $content += "<td>$($event.Source)</td>"
+                    $content += "<td>$($event.Message)</td>"
+                    $content += "</tr>"
+                }
+                $content += "<tr><td colspan=`"6`" class=`"lastrow`">$($sysevents.Count) events</td></tr>"
+            }
+            else {
+                $content += "<tr><td colspan=`"6`"> No $logname error events were found in the last $hrs hours</td></tr>"
+            }
             $content += "</table>"
         }
         catch {
