@@ -9,7 +9,7 @@ $menulist = ""
 $tabset   = ""
 $pagelink = Split-Path -Leaf $MyInvocation.MyCommand.Definition
 
-$plist = @('General','BIOS','Computer','Disks','Environment','Groups','Local Groups','Memory','Network','Operating System','Processor','Software','Startup','Updates','User Profiles','Tools')
+$plist = @('General','BIOS','Computer','Disks','Events','Groups','Local Groups','Memory','Network','Operating System','Processor','Software','Startup','Updates','User Profiles','Tools')
 $menulist = New-SkMenuList -PropertyList $plist -TargetLink "adcomputer.ps1?v=$Script:SearchValue" -Default $Script:TabSelected
 $tabset   = $menulist
 
@@ -19,16 +19,16 @@ switch ($Script:TabSelected) {
             $cdata = Get-SkAdComputers -ComputerName $Script:SearchValue
             #$cdata = Get-ADsComputer -Name $Script:SearchValue
             $content = "<table id=table2>"
-            $content += "<tr><td class=t2td1>Name</td><td class=t2td2>$($cdata.Name)</td></tr>"
-            $content += "<tr><td class=t2td1>DNS Name</td><td class=t2td2>$($cdata.DnsName)</td></tr>"
-            $content += "<tr><td class=t2td1>LDAP Path</td><td class=t2td2>$($cdata.DN)</td></tr>"
-            $content += "<tr><td class=t2td1>OS</td><td class=t2td2>$($cdata.OS)</td></tr>"
-            $content += "<tr><td class=t2td1>Date Created</td><td class=t2td2>$($cdata.Created)</td></tr>"
-            $content += "<tr><td class=t2td1>Last Login</td><td class=t2td2>$($cdata.LastLogon)</td></tr>"
+            $content += "<tr><td class=`"t2td1`">Name</td><td class=`"t2td2`">$($cdata.Name)</td></tr>"
+            $content += "<tr><td class=`"t2td1`">DNS Name</td><td class=`"t2td2`">$($cdata.DnsName)</td></tr>"
+            $content += "<tr><td class=`"t2td1`">LDAP Path</td><td class=`"t2td2`">$($cdata.DN)</td></tr>"
+            $content += "<tr><td class=`"t2td1`">OS</td><td class=`"t2td2`">$($cdata.OS)</td></tr>"
+            $content += "<tr><td class=`"t2td1`">Date Created</td><td class=`"t2td2`">$($cdata.Created)</td></tr>"
+            $content += "<tr><td class=`"t2td1`">Last Login</td><td class=`"t2td2`">$($cdata.LastLogon)</td></tr>"
             if ($cdata.SPNlist.Count -gt 0) {
                 $spnlist = $cdata.SPNlist -join "</br>"
-                $content += "<tr><td class=t2td1>SPNs</td>"
-                $content += "<td class=t2td2>$spnlist</td></tr>"
+                $content += "<tr><td class=`"t2td1`">SPNs</td>"
+                $content += "<td class=`"t2td2`">$spnlist</td></tr>"
             }
             $content += "</table>"
         }
@@ -62,6 +62,24 @@ switch ($Script:TabSelected) {
     'BIOS' {
         try {
             $content = Get-SkWmiPropTableSingle -ComputerName $Script:SearchValue -WmiClass "Win32_BIOS"
+        }
+        catch {
+            if ($Error[0].Exception.Message -like "Access is denied*") {
+                $content = Get-WmiAccessError
+            }
+        }
+        break;
+    }
+    'Events' {
+        $afterdate = (Get-Date).AddHours(-24)
+        try {
+            $sysevents = Get-EventLog -LogName System -ComputerName $Script:SearchValue -After $afterdate -EntryType Error -ErrorAction Stop
+            $appevents = Get-EventLog -LogName Application -ComputerName $Script:SearchValue -After $afterdate -EntryType Error -ErrorAction Stop
+            $content = "<table id=table2>"
+            $content += "<tr><th>Event Log</th><th>Errors in last 24 hours</th></tr>"
+            $content += "<tr><td>System</td><td><td>$($sysevents.Count)</td></tr>"
+            $content += "<tr><td>Application</td><td><td>$($appevents.Count)</td></tr>"
+            $content += "</table>"
         }
         catch {
             if ($Error[0].Exception.Message -like "Access is denied*") {

@@ -1,114 +1,22 @@
-﻿$SearchField = Get-SkPageParam -TagName 'f' -Default "FileName"
-$SearchValue = Get-SkPageParam -TagName 'v' -Default 'A'
-$SearchType  = Get-SkPageParam -TagName 'x' -Default 'begins'
-$SortField   = Get-SkPageParam -TagName 's' -Default 'filename'
-$SortOrder   = Get-SkPageParam -TagName 'so' -Default 'Asc'
-$TabSelected = Get-SkPageParam -TagName 'tab' -Default 'A'
-$Detailed    = Get-SkPageParam -TagName 'zz' -Default ""
+﻿Get-SkParams
 
 $PageTitle   = "CM Software Files"
-$PageCaption = "CM Software Files"
-
-if ($SearchValue -eq 'all') {
-    $SearchValue = ""
-    $TabSelected = 'all'
+if (![string]::IsNullOrEmpty($Script:SearchValue)) {
+    $PageTitle += ": $($Script:SearchValue)"
 }
-else {
-    if ($SearchField -eq 'FileName') {
-        $TabSelected = $SearchValue.Substring(0,1)
-    }
+$content   = ""
+$menulist  = ""
+$tabset    = ""
+$pagelink  = "cmfiles.ps1"
+$queryfile = ""
+$params = @{
+    Query     = "select distinct [FileName],[FileDescription], [FileVersion], [FileSize], Count(*) as [Copies] from dbo.v_GS_SoftwareFile group by [FileName], [FileVersion], [FileDescription], [FileSize]"
+    PageLink  = $pagelink 
+    Columns   = ('FileName','FileVersion','FileSize','Copies') 
+    Sorting   = 'FileName'
 }
+#$fnx = "<a href=`"cmfile.ps1?n=$fn&v=$fv&s=$fs`" title=`"Find Computers with this Instance`">$fn</a>"
+$content = Get-SkQueryTableMultiple @params
+$content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 
-$query = 'select distinct 
-FileName, 
-FileVersion, 
-FileSize, 
-count (*) as Copies 
-from v_gs_softwarefile'
-
-if (![string]::IsNullOrEmpty($SearchValue)) {
-    switch ($SearchType) {
-        'like'   { $query += " where ($SearchField like '%SearchValue%')"; $cap = 'contains'; break; }
-        'begins' { $query += " where ($SearchField like '$SearchValue%')"; $cap = 'begins with'; break; }
-        'ends'   { $query += " where ($SearchField like '%$SearchValue')"; $cap = 'ends with'; break; }
-        default  { $query += " where ($SearchField = '$SearchValue')"; $cap = '='; break; }
-    }
-    $IsFiltered = $True
-    $PageTitle += " ($cap $SearchValue)"
-    $PageCaption = $PageTitle
-}
-$query += " group by filename, fileversion, filesize, filedescription"
-$query += " order by $SortField"
-
-try {
-    $connection = New-Object -ComObject "ADODB.Connection"
-    $connString = "Data Source=$CmDBHost;Initial Catalog=CM_$CmSiteCode;Integrated Security=SSPI;Provider=SQLOLEDB"
-    $connection.Open($connString);
-    $IsOpen = $True
-    $rs = New-Object -ComObject "ADODB.RecordSet"
-    $rs.Open($query, $connection)
-    $xxx += "<br/>recordset defined"
-    $content = '<table id=table1><tr>'
-    if ($rs.BOF -and $rs.EOF) {
-        $content += "<tr><td style=`"height:150px;text-align:center`">"
-        $content += "No matching results found</td></tr>"
-    }
-    else {
-        $colcount = $rs.Fields.Count
-        $xxx += "$colcount columns returned"
-        $rs.MoveFirst()
-        for ($i = 0; $i -lt $colcount; $i++) {
-            $content += '<th>'+$rs.Fields($i).Name+'</th>'
-        }
-        $content += '</tr>'
-        $rowcount = 0
-        $tcopies = 0
-        while (!$rs.EOF) {
-            $content += '<tr>'
-            $fn = $rs.Fields("FileName").Value
-            $fv = $rs.Fields("FileVersion").Value
-            $fs = $rs.Fields("FileSize").Value
-            $qx = $rs.Fields("Copies").Value
-            $tcopies += $qx
-            $fnx = "<a href=`"cmfile.ps1?n=$fn&v=$fv&s=$fs`" title=`"Find Computers with this Instance`">$fn</a>"
-            $content += "<tr><td>$fnx</td><td>$fv</td><td style=`"text-align:right`">$fs</td><td style=`"text-align:right`">$qx</td></tr>"
-            [void]$rs.MoveNext()
-            $rowcount++
-        }
-        $content += '<tr><td colspan='+$($colcount-1)+' class=lastrow>'+$rowcount+' files returned'
-        if ($IsFiltered -eq $true) {
-            $content += " - <a href=`"cmfiles.ps1`" title=`"Show All`">Show All</a>"
-        }
-        $content += "</td><td style=`"text-align:right`" class=lastrow>$tcopies</td></tr></table>"
-    }
-}
-catch {
-    $content = "Error: $($Error[0].Exception.Message)"
-}
-finally {
-    if ($isopen -eq $true) {
-        $connection.Close()
-    }
-}
-
-$tabset = New-MenuTabSet -BaseLink 'cmfiles.ps1?x=begins&f=filename&v=' -DefaultID $TabSelected
-$content += Write-SkDetailView -PageRef "cmfiles.ps1" -Mode $Detailed
-
-@"
-<html>
-<head>
-<link rel="stylesheet" type="text/css" href="$STTheme"/>
-</head>
-
-<body>
-
-<h1>$PageCaption</h1>
-
-$tabset
-$content
-
-$(if ($DebugMode -eq 1) {"<p>$query</p>"})
-
-</body>
-</html>
-"@
+Show-SkPage

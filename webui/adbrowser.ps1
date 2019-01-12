@@ -1,30 +1,27 @@
-﻿$SearchField = Get-SkPageParam -TagName 'f' -Default ""
-$SearchValue = Get-SkPageParam -TagName 'v' -Default ""
-$SearchType  = Get-SkPageParam -TagName 'x' -Default 'equals'
-$SortField   = Get-SkPageParam -TagName 's' -Default 'FullPath'
-$SortOrder   = Get-SkPageParam -TagName 'so' -Default 'Asc'
-$TabSelected = Get-SkPageParam -TagName 'tab' -Default ""
-$Detailed    = Get-SkPageParam -TagName 'zz' -Default ""
-$CustomName  = Get-SkPageParam -TagName 'n' -Default ""
-$IsFiltered  = $False
-$PageTitle   = "AD OU Explorer"
-$PageCaption = "AD OU Explorer"
-$content     = ""
-$tabset      = ""
-$outree      = $null
-$query       = $null
-$xxx         = ""
+﻿Get-SkParams
 
-if (![string]::IsNullOrEmpty($SearchValue)) {
-    $oulist = Get-SkAdOuTree | Where {$_.FullPath -like "$SearchValue*"}
+$PageTitle   = "AD Explorer"
+if (![string]::IsNullOrEmpty($Script:SearchValue)) {
+    $PageTitle += ": $($Script:SearchValue)"
+}
+$content  = ""
+$menulist = ""
+$tabset   = ""
+$pagelink = Split-Path -Leaf $MyInvocation.MyCommand.Definition
+$outree   = $null
+$query    = $null
+$xxx      = ""
+
+if (![string]::IsNullOrEmpty($Script:SearchValue)) {
+    $oulist = Get-SkAdOuTree | Where {$_.FullPath -like "$Script:SearchValue*"}
     $IsFiltered = $True
 }
 else {
     $oulist = Get-SkAdOuTree | Where {$_.ChildPath.Length -eq 1}
 }
 $rowcount = 0
-if ($SearchValue -ne "") {
-    $content = "<h3>$($SearchValue.ToUpper())</h3>"
+if ($Script:SearchValue -ne "") {
+    $content = "<h3>$($Script:SearchValue.ToUpper())</h3>"
 }
 else {
     $content = "<h3>$($env:USERDNSDOMAIN)</h3>"
@@ -47,7 +44,6 @@ foreach ($ou in $oulist) {
     else {
         $xlink = "<a href=`"adbrowser.ps1?f=FullPath&v=$fpath`" title=`"Explore`">$ouname</a>"
     }
-    #$content += "<tr><td>$xlink</td><td>$fpath ($cdist)</td></tr>"
     $content += "<tr><td>$xlink</td></tr>"
     $rowcount++
 }
@@ -99,22 +95,6 @@ try {
 catch {}
 finally {
     $content += "</td></tr></table>"
-    #$content += Write-SkDetailView -PageRef "adbrowser.ps1" -Mode $Detailed
 }
 
-@"
-<html>
-<head>
-<link rel="stylesheet" type="text/css" href="$STTheme"/>
-</head>
-
-<body>
-
-<h1>$PageCaption</h1>
-
-$tabset
-$content
-
-</body>
-</html>
-"@
+Show-SkPage

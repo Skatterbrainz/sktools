@@ -11,7 +11,6 @@ $queryfile = "$Script:CustomName"
 $params = @{
     QueryFile = $queryfile 
     PageLink  = $pagelink 
-    Sorting   = 'FieldName'
     QueryType = 'reports'
 }
 

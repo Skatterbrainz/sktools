@@ -41,9 +41,13 @@ $PHPCgiPath = [string]$PHPCgiPath + "\php-cgi.exe"
 # --------------------------------------------------
 
 if ($Global:SkToolsLoaded -ne "TRUE") {
-if (!(Get-Module dbatools)) { Import-Module dbatools }
 
-$Global:SkToolsVersion = "1901.10.1"
+if (!(Get-Module dbatools)) { 
+    Write-Host "loading dbatools module..." -ForegroundColor Cyan
+    Import-Module dbatools 
+}
+
+$Global:SkToolsVersion = "1901.11.1"
 
 function Import-SkConfig {
 	[CmdletBinding()]
@@ -77,9 +81,11 @@ function Import-SkConfig {
 
 function Get-SkQueryTableSingle {
     param (
-        [parameter(Mandatory=$True)]
+        [parameter(Mandatory=$False)]
 			[ValidateNotNullOrEmpty()]
-			[string] $QueryFile,
+			[string] $QueryFile = "",
+        [parameter(Mandatory=$False)]
+            [string] $Query = "",
         [parameter(Mandatory=$True)]
 			[ValidateNotNullOrEmpty()]
 			[string] $PageLink,
@@ -89,10 +95,24 @@ function Get-SkQueryTableSingle {
     $output = $null
     $result = $null
     $Script:xxx = "$SearchField = $SearchValue"
+    if ($QueryFile -eq "" -and $Query -eq "") {
+        $output = "NO QUERY OR QUERY FILE WAS SPECIFIED"
+        return $output
+    }
     try {
-        $qpath  = $(Join-Path -Path $PSScriptRoot -ChildPath "queries")
-        $qfile  = $(Join-Path -Path $qpath -ChildPath "$QueryFile")
-        $result = @(Invoke-DbaQuery -SqlInstance $SkCmDbHost -Database "CM_$SkCmSiteCode" -File $qfile)
+        if ($Query -eq "") {
+            if (Test-Path $QueryFile) {
+                $qfile = $QueryFile
+            }
+            else {
+                $qpath  = $(Join-Path -Path $PSScriptRoot -ChildPath "queries")
+                $qfile  = $(Join-Path -Path $qpath -ChildPath "$QueryFile")
+            }
+            $result = @(Invoke-DbaQuery -SqlInstance $SkCmDbHost -Database "CM_$SkCmSiteCode" -File $qfile -ErrorAction Stop)
+        }
+        else {
+            $result = @(Invoke-DbaQuery -SqlInstance $SkCmDbHost -Database "CM_$SkCmSiteCode" -Query $Query -ErrorAction Stop)
+        }
         if ([string]::IsNullOrEmpty($Script:SearchField) -and ![string]::IsNullOrEmpty($Script:SearchValue)) {
             $SearchField = $($result[0].Table.Columns.ColumnName)[0]
             $Script:xxx = "Searchfield remapped to $SearchField"
@@ -131,9 +151,11 @@ function Get-SkQueryTableSingle {
 
 function Get-SkQueryTableMultiple {
     param (
-        [parameter(Mandatory=$True)]
+        [parameter(Mandatory=$False)]
             [ValidateNotNullOrEmpty()]
-            [string] $QueryFile,
+            [string] $QueryFile = "",
+        [parameter(Mandatory=$False)]
+            [string] $Query = "",
         [parameter(Mandatory=$True)]
             [ValidateNotNullOrEmpty()]
             [string] $PageLink,
@@ -157,15 +179,24 @@ function Get-SkQueryTableMultiple {
     $output = $null
     $result = $null
     $colcount = 0
+    if ($QueryFile -eq "" -and $Query -eq "") {
+        $output = "NO QUERY OR QUERY FILE WAS SPECIFIED"
+        return $output
+    }
     try {
-        if (!(Test-Path $QueryFile)) {
-            $qpath  = $(Join-Path -Path $PSScriptRoot -ChildPath $QueryType)
-            $qfile  = $(Join-Path -Path $qpath -ChildPath "$QueryFile")
+        if ($Query -eq "") {
+            if (!(Test-Path $QueryFile)) {
+                $qpath  = $(Join-Path -Path $PSScriptRoot -ChildPath $QueryType)
+                $qfile  = $(Join-Path -Path $qpath -ChildPath "$QueryFile")
+            }
+            else {
+                $qfile = $QueryFile
+            }
+            $result = @(Invoke-DbaQuery -SqlInstance $Global:SkCmDbHost -Database "CM_$SkCmSiteCode" -File $qfile -ErrorAction Stop)
         }
         else {
-            $qfile = $QueryFile
+            $result = @(Invoke-DbaQuery -SqlInstance $Global:SkCmDbHost -Database "CM_$SkCmSiteCode" -Query $Query -ErrorAction Stop)
         }
-        $result = @(Invoke-DbaQuery -SqlInstance $Global:SkCmDbHost -Database "CM_$SkCmSiteCode" -File $qfile)
         if (![string]::IsNullOrEmpty($Script:SearchField)) {
             switch ($Script:SearchType) {
                 'like' {
@@ -207,7 +238,7 @@ function Get-SkQueryTableMultiple {
             $colcount = $columns.Count
         }
         $output = "<table id=table1><tr>"
-        if ($colcount -gt 0 -and $ColumnSorting) {
+        if ($colcount -gt 0 -and $ColumnSorting -ne $False) {
             $output += New-SkTableColumnSortRow -ColumnNames $Columns -BaseLink "$PageLink`?f=$($Script:SearchField)&v=$($Script:SearchValue)&x=$($Script:SearchType)" -SortDirection $Script:SortOrder
         }
         else {

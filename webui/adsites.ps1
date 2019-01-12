@@ -1,16 +1,15 @@
-﻿$SearchField = Get-SkPageParam -TagName 'f' -Default ""
-$SearchValue = Get-SkPageParam -TagName 'v' -Default ""
-$SearchType  = Get-SkPageParam -TagName 'x' -Default 'like'
-$SortField   = Get-SkPageParam -TagName 's' -Default 'Name'
-$SortOrder   = Get-SkPageParam -TagName 'so' -Default 'Asc'
-$TabSelected = Get-SkPageParam -TagName 'tab' -Default 'all'
-$Detailed    = Get-SkPageParam -TagName 'zz' -Default ""
-$CustomName  = Get-SkPageParam -TagName 'n' -Default ""
+﻿Get-SkParams
 
 $PageTitle   = "AD Sites"
-$PageCaption = "AD Sites"
-$content     = ""
-$tabset      = ""
+if (![string]::IsNullOrEmpty($Script:SearchValue)) {
+    $PageTitle += ": $($Script:SearchValue)"
+}
+$content  = ""
+$menulist = ""
+$tabset   = ""
+$pagelink = "adsites.ps1"
+
+$tabset  = New-SkMenuTabSet -BaseLink 'adsites.ps1?x=begins&f=SiteName&v=' -DefaultID $TabSelected
 
 try {
     $Forest = [System.DirectoryServices.ActiveDirectory.Forest]::GetCurrentForest()
@@ -27,6 +26,27 @@ try {
         }
         New-Object PSObject -Property $props
     }
+    if ($Script:SearchValue -ne "") {
+        switch ($Script:SearchType) {
+            'like' {
+                $sitelist = $sitelist | Where-Object {$_.SiteName -like "*$Script:SearchValue*"}
+                break;
+            }
+            'begins' {
+                $sitelist = $sitelist | Where-Object {$_.SiteName -like "$Script:SearchValue*"}
+                break;
+            }
+            'ends' {
+                $sitelist = $sitelist | Where-Object {$_.SiteName -like "*$Script:SearchValue"}
+                break;
+            }
+            default {
+                $sitelist = $sitelist | Where-Object {$_.SiteName -eq $Script:SearchValue}
+                break;
+            }
+        }
+        $IsFiltered = $True
+    }
     $content = "<table id=table1>"
     $content += "<tr><th>Name</th><th>Location</th><th>Subnets</th><th>Adjacent Sites</td></tr>"
     $rowcount = 0
@@ -38,26 +58,11 @@ try {
         $content += "</tr>"
         $rowcount++
     }
-    $content += "<tr><td class=lastrow colspan=4>$(Write-RowCount 'site' $rowcount)</td></tr>"
+    $content += "<tr><td class=`"lastrow`" colspan=`"4`">$rowcount sites found</td></tr>"
     $content += "</table>"
 }
 catch {
     $content += "<table id=table2><tr><td>$($Error[0].Exception.Message)</td></tr></table>"
 }
 
-@"
-<html>
-<head>
-<link rel="stylesheet" type="text/css" href="$STTheme"/>
-</head>
-
-<body>
-
-<h1>$PageCaption</h1>
-
-$tabset
-$content
-
-</body>
-</html>
-"@
+Show-SkPage
