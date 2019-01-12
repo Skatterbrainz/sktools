@@ -21,22 +21,27 @@ function New-SkDesktopShortcut {
     }
     try {
         if ($AllUsers) {
+            Write-Verbose "creating shortcut for All Users"
             $ShortcutFile = "$env:ALLUSERSPROFILES\Desktop\$Name.lnk"
         }
         else {
+            Write-Verbose "creating shortcut for Current User"
             $ShortcutFile = "$env:USERPROFILE\Desktop\$Name.lnk"
         }
         $WScriptShell = New-Object -ComObject WScript.Shell
         $Shortcut = $WScriptShell.CreateShortcut($ShortcutFile)
         $Shortcut.TargetPath = $Target
         if ($ShortcutType -eq 'file' -and $Arguments -ne "") {
+            Write-Verbose "file based shortcut target"
             $Shortcut.Arguments = $Arguments
             $Shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,167"
         }
         else {
+            Write-Verbose "web based shortcut target"
             $Shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,174"
         }
         [void]$Shortcut.Save()
+        Write-Verbose "shortcut saved"
     }
     catch {
         Write-Error $Error[0].Exception.Message
@@ -46,8 +51,10 @@ function New-SkDesktopShortcut {
 function Set-SkDefaults {
     [CmdletBinding()]
     param()
+    Write-Host "setting default configuration" -ForegroundColor Cyan
     try {
         $cfgfile = "$($env:USERPROFILE)\Documents\skconfig.txt"
+        Write-Verbose "config file: $cfgfile"
         $params = [ordered]@{
             _Comment = "SkatterTools configuration file. Created by Set-SkDefaults"
             _LastUpdated         = (Get-Date)
@@ -63,12 +70,13 @@ function Set-SkDefaults {
             SkCmSiteCode         = "P01"
             SkCmCollectionManage = "TRUE"
         }
+        Write-Verbose "writing to $cfgfile"
         $params.Keys | %{ "$($_) = $($params.Item($_))" } | Out-File $cfgfile
-        Write-Verbose "configuration saved to: $cfgfile"
+        Write-Host "configuration saved to: $cfgfile" -ForegroundColor Cyan
         $result = "success"
     }
     catch {
-        Write-Error $Error[0].Exception.Message
+        #Write-Error $Error[0].Exception.Message
         $result = "error"
     }
     finally {
@@ -82,40 +90,42 @@ function Install-SkatterTools {
         [parameter()]
         [string] $Port = "8080"
     )
+    Write-Verbose "checking for poshserver module"
     if (!(Test-Path "$env:ProgramFiles\PoSHServer\modules\PoSHServer\PoSHServer.psd1")) {
         Write-Warning "PoSHServer *HAS* to be installed first!"
         break
     }
+    Write-Verbose "poshserver verified. building configuration"
     try {
-        $mpath = Split-Path $(Get-Module sktools).path
-        $wpath = Join-Path -Path $mpath -ChildPath "webui"
-        $startfile = Join-Path $wpath -ChildPath "Start-SkTools.ps1"
+        #$mpath = Split-Path $(Get-Module sktools).path
+        $startfile = Join-Path $PSScriptRoot -ChildPath "Start-SkTools.ps1"
+        Write-Verbose "startfile = $startfile"
         Write-Host "unblocking scripts in skattertools folder..." -ForegroundColor Cyan
-        Get-ChildItem -Path $mpath -Filter "*.ps1" -Recurse | Unblock-File -Confirm:$False
+        Get-ChildItem -Path $PSScriptRoot -Filter "*.ps1" -Recurse | Unblock-File -Confirm:$False
         Write-Host "setting default configuration..." -ForegroundColor Cyan
-        if (Set-SkDefaults -ne "success") {
+        if ($(Set-SkDefaults) -ne "success") {
             Write-Warning "Failed to update skconfig.txt file under user documents folder"
             break
         }
-        Write-Verbose "creating desktop shortcuts..."
+        Write-Host "creating desktop shortcuts..." -ForegroundColor Cyan
         $params = @{
             Name      = "Start Web Service" 
             Target    = "$env:WINDIR\System32\WindowsPowerShell\v1.0\powershell.exe" 
             Arguments = "-File `"$startfile`""
         }
-        New-SkDesktopShortcut @params
+        New-SkDesktopShortcut @params | Out-Null
         $params = @{
             Name   = "SkatterTools" 
             Target = "http://localhost`:$Port/" 
             ShortcutType = "web"
         }
-        New-SkDesktopShortcut @params
+        New-SkDesktopShortcut @params | Out-Null
         Write-Host "SkatterTools setup is complete!" -ForegroundColor Green
     }
     catch {
-        Write-Warning "Welcome to pukeville! Something just puked and died. Better find a mop."
         Write-Error $Error[0].Exception.Message
+        Write-Warning "Welcome to pukeville! Something just puked and died. Better find a mop."
     }
 }
 
-Export-ModuleMember -Function Install-SkatterTools
+#Export-ModuleMember -Function Install-SkatterTools
