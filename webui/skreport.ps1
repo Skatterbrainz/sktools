@@ -9,12 +9,13 @@ $tabset    = ""
 $pagelink  = "skreport.ps1"
 $queryfile = "$Script:CustomName"
 $params = @{
-    QueryFile = $queryfile 
-    PageLink  = $pagelink 
-    QueryType = 'reports'
+    QueryFile  = $queryfile 
+    PageLink   = $pagelink 
+    QueryType  = 'reports'
+	NoUnFilter = $True
 }
 
 $content = Get-SkQueryTableMultiple @params
 $content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 
-Show-SkPage
+Write-SkWebContent

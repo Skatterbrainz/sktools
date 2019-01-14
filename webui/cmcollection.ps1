@@ -1,4 +1,5 @@
 ﻿Get-SkParams
+$CollType = Get-SkPageParam -TagName 't' -Default ""
 
 $PageTitle   = "CM Collection"
 $content  = ""
@@ -7,7 +8,6 @@ $tabset   = ""
 $pagelink = "cmcollection.ps1"
 
 if ([string]::IsNullOrEmpty($Script:CustomName)) {
-    #$collName = Get-SkCmCollectionName -CollectionID $Script:SearchValue
     $collName = Get-SkCmObjectName -TableName "v_Collection" -SearchProperty "CollectionID" -SearchValue $Script:SearchValue -ReturnProperty "Name"
 }
 else {
@@ -29,7 +29,6 @@ else {
     $CollType = 1
 }
 
-
 switch ($Script:TabSelected) {
     'General' {
         $xxx = "Collection Type: $CollType"
@@ -38,8 +37,7 @@ switch ($Script:TabSelected) {
             PageLink  = "cmcollection.ps1"
             Columns   = ('CollectionName','CollectionID','Comment','Members','Type','Variables','LimitedTo')
         }
-        #$content = Get-SkQueryTableSingle @params
-        $content = Get-SkQueryTableSingle -QueryFile "cmcollection.sql" -PageLink = $pagelink -Columns ('CollectionName','CollectionID','Comment','Members','Type','Variables','LimitedTo')
+        $content = Get-SkQueryTableSingle @params
         break;
     }
     'Members' {
@@ -52,16 +50,23 @@ switch ($Script:TabSelected) {
             $qfile = "cmusercollectionmembers.sql"
             $columns = ('UserName','UserFullName','ResourceID','Domain','SiteCode','RuleType','CollectionID')
         }
-        $content = Get-SkQueryTableMultiple -QueryFile $qfile -PageLink "cmcollection.ps1" -Columns $columns -NoUnFilter -NoCaption
+		$params = @{
+			QueryFile  = $qfile
+			PageLink   = $pagelink
+			Columns    = $columns
+			NoUnFilter = $True
+			NoCaption  = $True
+		}
+        $content = Get-SkQueryTableMultiple @params
         break;
     }
     'QueryRules' {
         $xxx = "Collection Type: $CollType"
-        $content = Get-SkQueryTableMultiple -QueryFile "cmcollectionqueryrules.sql" -PageLink "cmcollection.ps1" -Columns ('RuleName','QueryID','QueryExpression','LimitToCollectionID') -NoUnFilter -NoCaption -Sorting "RuleName"
+        $content = Get-SkQueryTableMultiple -QueryFile "cmcollectionqueryrules.sql" -PageLink $pagelink -Columns ('RuleName','QueryID','QueryExpression','LimitToCollectionID') -NoUnFilter -NoCaption -Sorting "RuleName"
         break;
     }
     'Variables' {
-        $content = Get-SkQueryTableMultiple -QueryFile "cmcollectionvariables.sql" -PageLink "cmcollection.ps1" -Columns ('Name','Value','IsMasked')
+        $content = Get-SkQueryTableMultiple -QueryFile "cmcollectionvariables.sql" -PageLink $pagelink -Columns ('Name','Value','IsMasked')
         break;
     }
     'Tools' {
@@ -79,7 +84,7 @@ switch ($Script:TabSelected) {
 } # switch
 
 $tabs = @('General','Members','QueryRules','Variables','Tools')
-$tabset  = New-SkMenuTabSet2 -MenuTabs $tabs -BaseLink "cmcollection.ps1"
+$tabset  = New-SkMenuTabSet2 -MenuTabs $tabs -BaseLink "cmcollection.ps1?t=$CollType"
 $content += Write-SkDetailView -PageRef "cmcollection.ps1" -Mode $Detailed
 
-Show-SkPage
+Write-SkWebContent

@@ -8,8 +8,15 @@ $content  = ""
 $menulist = ""
 $tabset   = ""
 $pagelink = "cmusers.ps1"
-$content  = Get-SkQueryTableMultiple -QueryFile "cmusers.sql" -PageLink "cmusers.ps1" -Columns ('ResourceID','UserName','AADUserID','Domain','UPN','Department','Title') -Sorting "UserName"
+$qfile    = "cmusers.sql"
+$params = @{
+	QueryFile = $qfile
+	PageLink  = $pagelink
+	Columns   = ('ResourceID','UserName','AADUserID','Domain','UPN','Department','Title')
+	Sorting   = 'UserName'
+}
+$content  = Get-SkQueryTableMultiple @params
 $tabset   = New-SkMenuTabSet -BaseLink 'cmusers.ps1?x=begins&f=UserName&v=' -DefaultID $TabSelected
-$content += Write-SkDetailView -PageRef "cmusers.ps1" -Mode $Detailed
+$content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 
-Show-SkPage
+Write-SkWebContent

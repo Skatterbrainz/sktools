@@ -1,4 +1,4 @@
-﻿Get-SkParams | Out-Null
+﻿Get-SkParams
 
 $PageTitle   = "AD Computer"
 if (![string]::IsNullOrEmpty($Script:SearchValue)) {
@@ -9,7 +9,7 @@ $menulist = ""
 $tabset   = ""
 $pagelink = Split-Path -Leaf $MyInvocation.MyCommand.Definition
 
-$plist = @('General','BIOS','Computer','Disks','Events - Application','Events - System','Groups','Local Groups','Memory','Network','Operating System','Processor','Software','Startup','Updates','User Profiles','Tools')
+$plist = @('General','BIOS','Computer','Disks','Events - Application','Events - System','Groups','Local Groups','Network','Operating System','Processor','Software','Startup','Updates','User Profiles','Tools')
 $menulist = New-SkMenuList -PropertyList $plist -TargetLink "adcomputer.ps1?v=$Script:SearchValue" -Default $Script:TabSelected
 $tabset   = $menulist
 
@@ -42,9 +42,7 @@ switch ($Script:TabSelected) {
             $content = Get-SkWmiPropTableSingle -ComputerName $Script:SearchValue -WmiClass "Win32_ComputerSystem"
         }
         catch {
-            if ($Error[0].Exception.Message -like "Access is denied*") {
-                $content = Get-WmiAccessError
-            }
+			$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
         }
         break;
     }
@@ -53,9 +51,7 @@ switch ($Script:TabSelected) {
             $content = Get-SkWmiPropTableMultiple -ComputerName $Script:SearchValue -WmiClass "Win32_LogicalDisk" -Columns ('DeviceID','DriveType','VolumeName','Size','FreeSpace') -SortField "DeviceID"
         }
         catch {
-            if ($Error[0].Exception.Message -like "Access is denied*") {
-                $content = Get-WmiAccessError
-            }
+			$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
         }
         break;
     }
@@ -64,9 +60,7 @@ switch ($Script:TabSelected) {
             $content = Get-SkWmiPropTableSingle -ComputerName $Script:SearchValue -WmiClass "Win32_BIOS"
         }
         catch {
-            if ($Error[0].Exception.Message -like "Access is denied*") {
-                $content = Get-WmiAccessError
-            }
+			$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
         }
         break;
     }
@@ -99,9 +93,7 @@ switch ($Script:TabSelected) {
             $content += "</table>"
         }
         catch {
-            if ($Error[0].Exception.Message -like "Access is denied*") {
-                $content = Get-WmiAccessError
-            }
+			$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
         }
         break;
     }
@@ -134,31 +126,25 @@ switch ($Script:TabSelected) {
             $content += "</table>"
         }
         catch {
-            if ($Error[0].Exception.Message -like "Access is denied*") {
-                $content = Get-WmiAccessError
-            }
+			$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
         }
         break;
     }
     'Network' {
         try {
-            $content = Get-SkWmiPropTableMultiple -ComputerName $Script:SearchValue -WmiClass "Win32_NetworkAdapterConfiguration" -Columns ('IPEnabled','DHCPEnabled','IPAddress','DefaultIPGateway','DNSDomain','ServiceName','Description','Index') -SortField 'Index'
+            $content = Get-SkWmiPropTableMultiple -ComputerName $Script:SearchValue -WmiClass "Win32_NetworkAdapterConfiguration" -Columns ('Index','Description','IPEnabled','DHCPEnabled','IPAddress','DefaultIPGateway','DNSDomain','ServiceName') -SortField 'Index'
         }
         catch {
-            if ($Error[0].Exception.Message -like "Access is denied*") {
-                $content = Get-WmiAccessError
-            }
+			$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
         }
         break;
     }
     'Operating System' {
         try {
-            $content = Get-SkWmiPropTableSingle -ComputerName $Script:SearchValue -WmiClass "Win32_OperatingSystem"
+            $content = Get-SkWmiPropTableSingle -ComputerName $Script:SearchValue -WmiClass "Win32_OperatingSystem" -Columns ("Caption","Build","Version") -SortField 'Caption'
         }
         catch {
-            if ($Error[0].Exception.Message -like "Access is denied*") {
-                $content = Get-WmiAccessError
-            }
+			$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
         }
         break;
     }
@@ -167,9 +153,7 @@ switch ($Script:TabSelected) {
             $content = Get-SkWmiPropTableMultiple -ComputerName $Script:SearchValue -WmiClass "Win32_Processor" -Columns ('DeviceID','Caption','Manufacturer','MaxClockSpeed') -SortField 'Caption'
         }
         catch {
-            if ($Error[0].Exception.Message -like "Access is denied*") {
-                $content = Get-WmiAccessError
-            }
+			$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
         }
         break;
     }
@@ -178,12 +162,19 @@ switch ($Script:TabSelected) {
             $content = Get-SkWmiPropTableMultiple -ComputerName $Script:SearchValue -WmiClass "Win32_Product" -Columns ('Name','Vendor','Version','PackageCode') -SortField 'Name'
         }
         catch {
-            if ($Error[0].Exception.Message -like "Access is denied*") {
-                $content = Get-WmiAccessError
-            }
+			$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
         }
         break;
     }
+	'Updates' {
+        try {
+            $content = Get-SkWmiPropTableMultiple -ComputerName $Script:SearchValue -WmiClass "Win32_QuickFixEngineering" -Columns ('HotFixID','Description','FixComments','Caption','InstallDate','InstalledBy') -SortField 'HotFixID'
+        }
+        catch {
+			$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
+        }
+		break;
+	}
     'Groups' {
         try {
             $groups = Get-SkAdUserGroups -UserName "$SearchValue"
@@ -197,9 +188,7 @@ switch ($Script:TabSelected) {
             $content = (Get-WmiObject -Class "Win32_Group" -ComputerName $SearchValue -Filter "Domain = '$SearchValue'" | Select Name,Description,SID | Sort-Object Name | ConvertTo-Html -Fragment) -replace '<table>','<table id=table1>'
         }
         catch {
-            if ($Error[0].Exception.Message -like "Access is denied*") {
-                $content = Get-WmiAccessError
-            }
+			$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
         }
         break;
     }
@@ -208,9 +197,7 @@ switch ($Script:TabSelected) {
             $content = Get-SkWmiPropTableMultiple -ComputerName $SearchValue -WmiClass "Win32_StartupCommand" -Columns ('Name','Description','Command','Location') -SortField 'Name'
         }
         catch {
-            if ($Error[0].Exception.Message -like "Access is denied*") {
-                $content = Get-WmiAccessError
-            }
+			$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
         }
         break;
     }
@@ -219,9 +206,7 @@ switch ($Script:TabSelected) {
             $content = Get-SkWmiPropTableMultiple -ComputerName $SearchValue -WmiClass "Win32_UserProfile" -Columns ('LocalPath','LastUseTime','Special','RoamingConfigured') -SortField 'LocalPath'
         }
         catch {
-            if ($Error[0].Exception.Message -like "Access is denied*") {
-                $content = Get-WmiAccessError
-            }
+			$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
         }
         break;
     }
@@ -246,10 +231,12 @@ switch ($Script:TabSelected) {
     'Tools' {
         $content = "<table id=table2><tr><td><ul>"
         $content += "<li><a href=`"adtool.ps1?t=gpupdate&c=$SearchValue`">Invoke Group Policy Update (GPUPDATE)</a></li>"
+        $content += "<li><a href=`"adtool.ps1?t=ccmrepair&c=$SearchValue`">CCM Client Repair (CCMRepair)</a></li>"
+        $content += "<li><a href=`"adtool.ps1?t=restart&c=$SearchValue`">Restart Computer (Restart)</a></li>"
         $content += "</ul></td></tr></table>"
         break;
     }
 } # switch
 
 
-Show-SkPage
+Write-SkWebContent

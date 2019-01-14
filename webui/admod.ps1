@@ -101,18 +101,4 @@ else {
     }
 }
 
-@"
-<html>
-<head>
-<link rel="stylesheet" type="text/css" href="$STTheme"/>
-</head>
-
-<body>
-
-<h1>$PageCaption</h1>
-
-$content
-
-</body>
-</html>
-"@
+Write-SkWebContent

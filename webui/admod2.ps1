@@ -39,25 +39,11 @@ else {
     }
     finally {
         $content = "<table id=table2>"
-        $content += "<tr><td>action: $opname</td></tr>"
-        $content += "<tr><td>result: $result</td></tr>"
+        $content += "<tr><td>Action: $opname</td></tr>"
+        $content += "<tr><td>Result: $result</td></tr>"
         $content += "<tr><td><a href=`"aduser.ps1?f=username&v=$username&x=equals&tab=groups`">Return to User Account</a></td></tr>"
         $content += "</table>"
     }
 }
 
-@"
-<html>
-<head>
-<link rel="stylesheet" type="text/css" href="$STTheme"/>
-</head>
-
-<body>
-
-<h1>$PageCaption</h1>
-
-$content
-
-</body>
-</html>
-"@
+Write-SkWebContent

@@ -70,7 +70,7 @@ switch ($TabSelected) {
         break;
     }
 } # switch
-$tabset = New-New-SkMenuTabSet2 -MenuTabs $tabs -BaseLink "adgroup.ps1"
+$tabset  = New-SkMenuTabSet2 -MenuTabs $tabs -BaseLink "adgroup.ps1"
 $content += Write-SkDetailView -PageRef "adgroup.ps1" -Mode $Detailed
 
-Show-SkPage
+Write-SkWebContent

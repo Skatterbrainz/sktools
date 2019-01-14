@@ -17,6 +17,10 @@ $content = "<table id=table2>
     <tr><td>App Path</td><td>$Global:SkWebPath</td></tr>
     <tr><td>Query Files</td><td>$Global:SkQueryPath</td></tr>
     <tr><td>Report Files</td><td>$Global:SkReportsPath</td></tr>
+	<tr><td colspan=2>Built with PoSHServer by Yusuf Ozturk</td></tr>
+	<tr><td>GNU License</td><td><a href=`"license.txt`">License.txt</a></td></tr>
+	<tr><td>ReadMe Text</td><td><a href=`"readme.txt`">ReadMe.txt</a></td></tr>
+	<tr><td>Donate Information</td><td><a href=`"donate.txt`">Donate.txt</a></td></tr>
 </table>"
 
 Show-SkPage
