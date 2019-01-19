@@ -12,11 +12,11 @@ $queryfile = "query.sql"
 $params = @{
     QueryFile = $queryfile 
     PageLink  = $pagelink 
-    Columns   = () 
+    Columns   = @() 
     Sorting   = 'FieldName'
 }
 
 $content = Get-SkQueryTableMultiple @params
 $content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 
-Show-SkPage
+Write-SkWebContent

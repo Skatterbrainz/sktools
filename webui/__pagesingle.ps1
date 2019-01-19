@@ -14,9 +14,9 @@ $queryfile = "query.sql"
 $params = @{
     QueryFile = $queryfile
     PageLink  = $pagelink
-    Columns   = ()
+    Columns   = @()
 }
 $content = Get-SkQueryTableSingle @params
 $content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 
-Show-SkPage
+Write-SkWebContent

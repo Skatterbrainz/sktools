@@ -62,6 +62,7 @@ if ($SkCmEnabled -ne 'false') {
         <li class="limenu"><a href="http://$SkCmSmsProvider/reports/browse/ConfigMgr_$SkCmSiteCode" target="_new" title="Reports">Reports</a></li>
 		<li class="limenu"><a href="cmsitestatus.ps1" target="main" title="Site Status">Site Status</a></li>
 		<li class="limenu"><a href="cmcompstat.ps1" target="main" title="Component Status">Site Components</a></li>
+		<li class="limenu"><a href="cmdepsummary.ps1" target="main" title="Deployments">Deployments</a></li>
 		<li class="limenu"><a href="dbstats.ps1" target="main" title="ConfigMgr SQL Status">SQL Status</a></li>
         <li class="limenu"><a href="dbrecovery.ps1" target="main" title="SQL Server Recovery Models">DB Recovery</a></li>
         <li class="limenu"><a href="skreports.ps1" target="main" title="Custom Reports">Custom Reports</a></li>

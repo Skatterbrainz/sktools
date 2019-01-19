@@ -1,4 +1,5 @@
 $MaxLoginDays = Get-SkPageParam -TagName "d" -Default ""
+$ReportType   = Get-SkPageParam -TagName "r" -Default ""
 $AccountType  = Get-SkPageParam -TagName "a" -Default ""
 $PageTitle    = "AD Reports: Last Login &gt; $MaxLoginDays days"
 $PageCaption  = "AD Reports: Last Login &gt; $MaxLoginDays days"
@@ -14,7 +15,7 @@ try {
             $content = "<table id=table1>"
             $content += "<tr><th>User Name</th><th>DistinguishedName</th><th>Login</th></tr>"
 
-            $ulist = $users | ?{(New-TimeSpan -Start $_.LastLogon -End (Get-Date)).Days -gt $MaxLoginDays}
+            $ulist = $users | Where-Object {(New-TimeSpan -Start $_.LastLogon -End (Get-Date)).Days -gt $MaxLoginDays}
 
             foreach ($usr in $ulist) {
                 $ux = Get-SkValueLinkAD -PropertyName "UserName" -Value $($usr.Name)
@@ -35,7 +36,7 @@ try {
             $content = "<table id=table1>"
             $content += "<tr><th>Computer Name</th><th>DistinguishedName</th><th>Login</th></tr>"
 
-            $mlist = $comps | ?{(New-TimeSpan -Start $_.LastLogon -End (Get-Date)).Days -gt $MaxLoginDays}
+            $mlist = $comps | Where-Object {(New-TimeSpan -Start $_.LastLogon -End (Get-Date)).Days -gt $MaxLoginDays}
 
             foreach ($m in $mlist) {
                 $cx = Get-SkValueLinkAD -PropertyName "ComputerName" -Value $($m.Name)
@@ -55,4 +56,4 @@ catch {
     $content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
 }
 
-Show-SkPage
+Write-SkWebContent

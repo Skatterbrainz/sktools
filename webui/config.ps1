@@ -47,7 +47,7 @@ if (!(Get-Module dbatools)) {
     Import-Module dbatools 
 }
 
-$Global:SkToolsVersion = "1901.13.2"
+$Global:SkToolsVersion = "1901.18.1"
 
 function Import-SkConfig {
 	[CmdletBinding()]
@@ -767,7 +767,7 @@ function Get-SkAdUserGroups {
 function Get-SkAdUserPwdExpirations {
     param ()
     try {
-        $noexp = Get-SkAdUserPwdNoExpiration | Select -ExpandProperty UserName
+        $noexp = Get-SkAdUserPwdNoExpiration | Select-Object -ExpandProperty UserName
         $domainname = $env:USERDOMAIN
         [adsi]$domain = "WinNT://$domainname"
         $mpwa = $($domain.MaxPasswordAge) / 86400
@@ -821,14 +821,23 @@ function Get-SkAdUserPwdNoExpiration {
 function Get-SkAdUserDisabled {
     param()
     # https://blogs.msmvps.com/richardsiddaway/2012/02/04/find-user-accounts-that-are-disabled/
-    $root = [ADSI]""            
-    $search = [adsisearcher]$root            
-    $search.Filter = "(&(objectclass=user)(objectcategory=user)(useraccountcontrol:1.2.840.113556.1.4.803:=2))"            
-    $search.SizeLimit = 3000            
-    $results = $search.FindAll()            
-    foreach ($result in $results){            
-        $result.Properties |             
-        select @{N="Name"; E={$_.name}}, @{N="DistinguishedName"; E={$_.distinguishedname}}            
+    $as = [adsisearcher]"(objectCategory=User)"
+    [void]$as.PropertiesToLoad.Add('name')
+    [void]$as.PropertiesToLoad.Add('sAMAccountName')
+    [void]$as.PropertiesToLoad.Add('distinguishedName')
+    $as.Filter = "(&(objectclass=user)(objectcategory=user)(useraccountcontrol:1.2.840.113556.1.4.803:=2))"
+    $as.SizeLimit = 3000
+    $results = $as.FindAll()
+    foreach ($item in $results) {
+        $uname = $($item.properties.item('sAMAccountName') | Out-String).Trim()
+        $name  = $($item.properties.item('name') | Out-String).Trim()
+        $dn    = $($item.properties.item('distinguishedName') | Out-String).Trim()
+        $props = [ordered]@{
+            UserName = $uname
+            FullName = $name
+            DN       = $dn
+        }
+        New-Object PSObject -Property $props
     }
 }
 

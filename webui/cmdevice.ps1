@@ -11,7 +11,7 @@ $menulist = ""
 $tabset   = ""
 $pagelink = Split-Path -Leaf $MyInvocation.MyCommand.Definition
 
-$plist = @('General','Storage','Collections','Disks','Network','Ping','Tools')
+$plist = @('General','Collections','Disks','Network','Tools')
 $menulist = New-SkMenuList -PropertyList $plist -TargetLink "cmdevice.ps1?v=$Script:SearchValue" -Default $Script:TabSelected
 $tabset = $menulist
 
@@ -21,7 +21,7 @@ switch ($TabSelected) {
         $params = @{
             QueryFile   = "cmdevice.sql"
             PageLink    = "cmdevice.ps1"
-            Columns     = ('Name','ResourceID','Manufacturer','Model','SerialNumber','OperatingSystem','OSBuild','ClientVersion','LastHwScan','LastDDR','LastPolicyRequest','ADSiteName')
+            Columns     = ('Name','ResourceID','Manufacturer','Model','SerialNumber','OperatingSystem','OSBuild','Processor','Cores','TrustExec','VmCapable','ClientVersion','LastHwScan','LastDDR','LastPolicyRequest','ADSiteName')
         }
         #$xxx = $params -join ';'
         $content = Get-SkQueryTableSingle @params
@@ -76,11 +76,12 @@ switch ($TabSelected) {
         $content = Get-SkQueryTableMultiple -QueryFile "cmdeviceapps.sql" -PageLink "cmdevice.ps1" -Columns ('ProductName','Publisher','Version') -Sorting "ProductName" -NoUnFilter -NoCaption
         break;
     }
-    'Notes' {
-        break;
-    }
+	'Tools' {
+		$content = "<table id=table2><tr><td>Coming Soon!</td></tr></table>"
+		break;
+	}
 }
 
 $content += Write-SkDetailView -PageRef "cmdevice.ps1" -Mode $Detailed
 
-Show-SkPage
+Write-SkWebContent
