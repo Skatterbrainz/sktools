@@ -3,7 +3,14 @@
     SMSSiteCode,
     SMSSiteName,
     LastDiscoveryTime,
-    LastDiscoveryStatus,
+    case 
+		when (LastDiscoveryStatus = 0) then 'Succeeded'
+		when (LastDiscoveryStatus = 1) then 'Completed'
+		when (LastDiscoveryStatus = 2) then 'Access Denied'
+		when (LastDiscoveryStatus = 3) then 'Failed'
+		when (LastDiscoveryStatus = 4) then 'Stopped'
+		else LastDiscoveryStatus 
+		end as LastDiscoveryStatus,
     LastPublishingTime,
     case 
         when (PublishingStatus = 1) then 'Published'
