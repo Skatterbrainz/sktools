@@ -102,4 +102,4 @@ $content += "<tr><td>Global Catalogs</td><td><ul>$($forest.GlobalCatalogs | %{"<
 $content += "<tr><td>Partitions</td><td><ul>$($forest.ApplicationPartitions | %{"<li>$_</li>"})</ul></td></tr>"
 $content += "</table>"
 
-Show-SkPage
+Write-SkWebContent

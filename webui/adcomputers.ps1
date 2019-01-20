@@ -12,4 +12,4 @@ $pagelink = Split-Path -Leaf $MyInvocation.MyCommand.Definition
 $tabset = New-SKMenuTabSet -BaseLink 'adcomputers.ps1?x=begins&f=name&v=' -DefaultID $TabSelected
 $content = Get-SkAdObjectTableMultiple -ObjectType 'computer' -Columns ('Name','OS','OSver','LastLogon') -NoSortHeadings -SortColumn "Name"
 
-Show-SkPage
+Write-SkWebContent

@@ -23,4 +23,4 @@ $content = "<table id=table2>
 	<tr><td>Donate Information</td><td><a href=`"donate.txt`">Donate.txt</a></td></tr>
 </table>"
 
-Show-SkPage
+Write-SkWebContent

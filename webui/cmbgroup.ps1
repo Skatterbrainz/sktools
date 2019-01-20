@@ -26,4 +26,4 @@ $tabs   = @('General','Boundaries','Systems')
 $tabset = New-SkMenuTabSet2 -MenuTabs $tabs -BaseLink "cmbgroup.ps1"
 $content += Write-SkDetailView -PageRef "cmbgroup.ps1" -Mode $Detailed
 
-Show-SkPage
+Write-SkWebContent

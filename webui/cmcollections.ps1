@@ -22,4 +22,4 @@ $content = Get-SkQueryTableMultiple -QueryFile $qfname -PageLink "cmcollections.
 $tabset  = New-SkMenuTabSet -BaseLink "cmcollections.ps1?t=$CollectionType&f=collectionname&x=begins&v=" -DefaultID $TabSelected
 $content += Write-SkDetailView -PageRef "cmcollections.ps1" -Mode $Detailed
 
-Show-SkPage
+Write-SkWebContent

@@ -30,4 +30,4 @@ try {
 catch {}
 $content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 
-Show-SkPage
+Write-SkWebContent

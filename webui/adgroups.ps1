@@ -12,4 +12,4 @@ $pagelink = Split-Path -Leaf $MyInvocation.MyCommand.Definition
 $tabset = New-MenuTabSet -BaseLink 'adgroups.ps1?x=begins&f=name&v=' -DefaultID $TabSelected
 $content = Get-SkAdObjectTableMultiple -ObjectType 'group' -Columns ('Name','Description') -SortColumn "Name" -NoSortHeadings
 
-Show-SkPage
+Write-SkWebContent

@@ -82,4 +82,4 @@ $content = @"
 </table>
 "@
 
-Show-SkPage
+Write-SkWebContent

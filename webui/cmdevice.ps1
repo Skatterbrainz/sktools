@@ -11,25 +11,23 @@ $menulist = ""
 $tabset   = ""
 $pagelink = Split-Path -Leaf $MyInvocation.MyCommand.Definition
 
-$plist = @('General','Collections','Disks','Network','Tools')
-$menulist = New-SkMenuList -PropertyList $plist -TargetLink "cmdevice.ps1?v=$Script:SearchValue" -Default $Script:TabSelected
+$plist = @('General','Collections','Disks','Network','OptionalFeatures','Software','Tools')
+$menulist = New-SkMenuList -PropertyList $plist -TargetLink "$pagelink`?v=$Script:SearchValue" -Default $Script:TabSelected
 $tabset = $menulist
+$output = $null
 
 switch ($TabSelected) {
     'General' {
-        $output = $null
         $params = @{
-            QueryFile   = "cmdevice.sql"
-            PageLink    = "cmdevice.ps1"
-            Columns     = ('Name','ResourceID','Manufacturer','Model','SerialNumber','OperatingSystem','OSBuild','Processor','Cores','TrustExec','VmCapable','ClientVersion','LastHwScan','LastDDR','LastPolicyRequest','ADSiteName')
+            QueryFile = "cmdevice.sql"
+            PageLink  = "cmdevice.ps1"
+            Columns   = ('Name','ResourceID','Manufacturer','Model','SerialNumber','OperatingSystem','OSBuild','Processor','Cores','TrustExec','VmCapable','ClientVersion','LastHwScan','LastDDR','LastPolicyRequest','ADSiteName')
         }
-        #$xxx = $params -join ';'
         $content = Get-SkQueryTableSingle @params
         break;
     }
     'Collections' {
         try {
-            $xxx = "query defined"
             $params = @{
                 QueryFile = "cmdevicecolls.sql"
                 PageLink  = "cmdevice.ps1"
@@ -63,17 +61,21 @@ switch ($TabSelected) {
         break;
     }
     'Network' {
-        $content = Get-SkQueryTableMultiple -QueryFile "cmdevicenetconfigs.sql" -PageLink "cmdevice.ps1"
+        $content = Get-SkQueryTableMultiple -QueryFile "cmdevicenetconfigs.sql" -PageLink $pagelink
         break;
     }
     'Disks' {
-        $output = $null
-        $content = Get-SkQueryTableMultiple -QueryFile "cmdevicedrives.sql" -PageLink "cmdevice.ps1" -Columns ('Drive','DiskType','Description','DiskSize','Used','FreeSpace','PCT')
+        $content = Get-SkQueryTableMultiple -QueryFile "cmdevicedrives.sql" -PageLink $pagelink -Columns ('Drive','DiskType','Description','DiskSize','Used','FreeSpace','PCT')
+        break;
+    }
+    'OptionalFeatures' {
+        $SearchField = 'ComputerName'
+        $content = Get-SkQueryTableMultiple -QueryFile "cmdevicefeatures.sql" -PageLink $pagelink -Columns ('FeatureName','FeatureID','InstallState') -Sorting "FeatureName" -NoUnFilter -NoCaption
         break;
     }
     'Software' {
         $SearchField = 'Name0'
-        $content = Get-SkQueryTableMultiple -QueryFile "cmdeviceapps.sql" -PageLink "cmdevice.ps1" -Columns ('ProductName','Publisher','Version') -Sorting "ProductName" -NoUnFilter -NoCaption
+        $content = Get-SkQueryTableMultiple -QueryFile "cmdeviceapps.sql" -PageLink $pagelink -Columns ('ProductName','Publisher','Version') -Sorting "ProductName" -NoUnFilter -NoCaption
         break;
     }
 	'Tools' {
@@ -82,6 +84,6 @@ switch ($TabSelected) {
 	}
 }
 
-$content += Write-SkDetailView -PageRef "cmdevice.ps1" -Mode $Detailed
+$content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 
 Write-SkWebContent

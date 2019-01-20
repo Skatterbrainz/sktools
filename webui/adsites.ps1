@@ -65,4 +65,4 @@ catch {
     $content += "<table id=table2><tr><td>$($Error[0].Exception.Message)</td></tr></table>"
 }
 
-Show-SkPage
+Write-SkWebContent

@@ -270,4 +270,4 @@ $content += "<form name=`"form1`" id=`"form1`" method=`"post`" action=`"search.p
 $content += "<input type=`"submit`" name=`"search`" id=`"search`" class=`"button1`" value=`"New Search`" />"
 $content += "</form>"
 
-Show-Skpage
+Write-SkWebContent

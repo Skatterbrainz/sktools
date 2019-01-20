@@ -1,20 +1,21 @@
-﻿Get-SkParams
+Get-SkParams
 
-$PageTitle   = "CM Software Files"
+$PageTitle   = "CM Security Roles"
 if (![string]::IsNullOrEmpty($Script:SearchValue)) {
     $PageTitle += ": $($Script:SearchValue)"
 }
 $content   = ""
 $menulist  = ""
 $tabset    = ""
-$pagelink  = "cmfiles.ps1"
-$queryfile = ""
+$pagelink  = "cmroles.ps1"
+$queryfile = "cmroles.sql"
 $params = @{
-    QueryFile = "cmfilescount.sql"
+    QueryFile = $queryfile 
     PageLink  = $pagelink 
-    Columns   = ('FileName','FileVersion','FileID','FileSize','Copies') 
-    Sorting   = 'FileName'
+    Columns   = @() 
+    Sorting   = 'RoleName'
 }
+
 $content = Get-SkQueryTableMultiple @params
 $content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 

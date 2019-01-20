@@ -13,4 +13,4 @@ $xxx         = ""
 $content = Get-SkQueryTableMultiple -QueryFile "cmsitestatus.sql" -PageLink "cmsitestatus.ps1" -Columns ('SiteStatus','Role','SiteCode','SiteSystem','TimeReported')
 $content += Write-SkDetailView -PageRef "cmsitestatus.ps1" -Mode $Detailed
 
-Show-SkPage
+Write-SkWebContent

@@ -1,10 +1,11 @@
 Get-SkParams
 
-$PageTitle   = "CM Deployments Summary"
-$content  = ""
-$menulist = ""
-$tabset   = ""
-$pagelink = "cmdepsummary.ps1"
+$PageTitle = "CM Deployments Summary"
+$content   = ""
+$menulist  = ""
+$tabset    = ""
+$pagelink  = "cmdepsummary.ps1"
+$queryfile = "cmdeploymentsummary.sql"
 
 $Script:TabSelected = $Script:SearchValue
 if ($Script:SearchValue -eq 'all') {
@@ -14,7 +15,13 @@ elseif (![string]::IsNullOrEmpty($Script:SearchValue)) {
     $PageTitle += ": $($Script:SearchValue)"
 }
 $xxx = "requesting query result"
-$content = Get-SkQueryTableMultiple -QueryFile "cmdeploymentsummary.sql" -PageLink $pagelink -Columns ('SoftwareName','CollectionName','CollectionID','FeatureType','DeployIntent','Total','Success','Failed') -NoCaption
+$params = @{
+	QueryFile = $queryfile 
+	PageLink  = $pagelink 
+	Columns   = ('SoftwareName','AssignmentID','CollectionName','CollectionID','FeatureType','DeployIntent','Total','Success','Failed')
+	NoCaption = $True
+}
+$content = Get-SkQueryTableMultiple @params
 $tabset  = New-SkMenuTabSet -BaseLink "$pagelink`?x=begins`&f=softwarename`&v=" -DefaultID $TabSelected
 $content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 

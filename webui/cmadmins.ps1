@@ -1,19 +1,19 @@
-﻿Get-SkParams
+Get-SkParams
 
-$PageTitle   = "CM Queries"
+$PageTitle   = "CM Security Admins"
 if (![string]::IsNullOrEmpty($Script:SearchValue)) {
     $PageTitle += ": $($Script:SearchValue)"
 }
 $content   = ""
 $menulist  = ""
 $tabset    = ""
-$pagelink  = "cmqueries.ps1"
-$queryfile = "cmqueries.sql"
+$pagelink  = "cmadmins.ps1"
+$queryfile = "cmadmins.sql"
 $params = @{
     QueryFile = $queryfile 
     PageLink  = $pagelink 
-    Columns   = ('QueryName','QueryID','Comments','TargetClassName','LimitToCollectionID')
-    Sorting   = 'FieldName'
+    Columns   = @('RoleName','UserName','DisplayName','DistinguishedName','AdminID','RoleID','AdminSID','IsGroup','AccountType') 
+    Sorting   = 'UserName'
 }
 
 $content = Get-SkQueryTableMultiple @params

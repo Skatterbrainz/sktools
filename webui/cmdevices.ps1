@@ -15,4 +15,4 @@ $qfile = "cmdevices.sql"
 $content = Get-SkQueryTableMultiple -QueryFile $qfile -PageLink $pagelink -Columns ('Name','ResourceID','Manufacturer','Model','OSName','OSBuild','ADSiteName') -Sorting "Name"
 $content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 
-Show-SkPage
+Write-SkWebContent

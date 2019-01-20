@@ -21,5 +21,5 @@ foreach ($link in $links) {
 }
 $content += "</table>"
 
-Show-SkPage
+Write-SkWebContent
 

@@ -22,4 +22,4 @@ $content = Get-SkQueryTableMultiple -QueryFile "cmpackages.sql" -PageLink "cmpac
 $tabset  = New-SkMenuTabSet -BaseLink 'cmpackages.ps1?x=begins&f=name&v=' -DefaultID $TabSelected
 $content += Write-SkDetailView -PageRef "cmpackages.ps1" -Mode $Detailed
 
-Show-SkPage
+Write-SkWebContent

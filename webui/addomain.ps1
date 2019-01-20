@@ -29,4 +29,4 @@ $content += "<tr><td>Password History Length</td><td style=`"text-align:right`">
 $content += "<tr><td>Account Lockout Interval</td><td style=`"text-align:right`">$alin</td></tr>"
 $content += "</table>"
 
-Show-SkPage
+Write-SkWebContent

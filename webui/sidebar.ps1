@@ -49,23 +49,29 @@ if ($SkCmEnabled -ne 'false') {
 		<li class="limenu"><a href="cmpackages.ps1?f=packagetype&v=258&x=equals" target="main" title="Boot Images">Boot Images</a></li>
 		<li class="limenu"><a href="cmpackages.ps1?f=packagetype&v=5&x=equals" target="main" title="Software Updates">Software Updates</a></li>
 		<li class="limenu"><a href="cmpackages.ps1?f=packagetype&v=4&x=equals" target="main" title="Task Sequences">Task Sequences</a></li>
+		<li class="limenu"><a href="cmscripts.ps1" target="main" title="Scripts">Scripts</a></li>
+	</ul>
+</div>
+
+<button class="accordion" title="Configuration Manager Inventory">CM Inventory</button>
+<div class="panel">
+	<ul class="ulmenu">
         <li class="limenu"><a href="cmproducts.ps1" target="main" title="Software Products Inventory">Software Inventory</a></li>
         <li class="limenu"><a href="cmfiles.ps1" target="main" title="Software Files">Software Files</a></li>
-		<li class="limenu"><a href="cmscripts.ps1" target="main" title="Scripts">Scripts</a></li>
+        <li class="limenu"><a href="skreports.ps1" target="main" title="Custom Reports">Custom Reports</a></li>
 	</ul>
 </div>
 
 <button class="accordion" title="Configuration Manager Monitoring">CM Monitoring</button>
 <div class="panel">
 	<ul class="ulmenu">
-		<li class="limenu"><a href="cmqueries.ps1" target="main" title="Queries">Queries</a></li>
-        <li class="limenu"><a href="http://$SkCmSmsProvider/reports/browse/ConfigMgr_$SkCmSiteCode" target="_new" title="Reports">Reports</a></li>
 		<li class="limenu"><a href="cmsitestatus.ps1" target="main" title="Site Status">Site Status</a></li>
 		<li class="limenu"><a href="cmcompstat.ps1" target="main" title="Component Status">Site Components</a></li>
+		<li class="limenu"><a href="cmqueries.ps1" target="main" title="Queries">Queries</a></li>
+        <li class="limenu"><a href="http://$SkCmSmsProvider/reports/browse/ConfigMgr_$SkCmSiteCode" target="_new" title="Reports">Reports</a></li>
 		<li class="limenu"><a href="cmdepsummary.ps1" target="main" title="Deployments">Deployments</a></li>
 		<li class="limenu"><a href="dbstats.ps1" target="main" title="ConfigMgr SQL Status">SQL Status</a></li>
         <li class="limenu"><a href="dbrecovery.ps1" target="main" title="SQL Server Recovery Models">DB Recovery</a></li>
-        <li class="limenu"><a href="skreports.ps1" target="main" title="Custom Reports">Custom Reports</a></li>
 	</ul>
 </div>
 
@@ -86,7 +92,8 @@ if ($SkCmEnabled -ne 'false') {
 		<li class="limenu">Client Settings</li>
 		<li class="limenu"><a href="cmtasks.ps1" target="main" title="Maintenance Tasks">Maintenance Tasks</a></li>
 		<li class="limenu">Accounts</li>
-		<li class="limenu">Roles</li>
+		<li class="limenu"><a href="cmroles.ps1" target="main" title="Security Roles">Roles</a></li>
+		<li class="limenu"><a href="cmadmins.ps1" target="main" title="Security Admins">Admins</a></li>
 	</ul>
 </div>
 

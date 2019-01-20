@@ -47,7 +47,7 @@ if (!(Get-Module dbatools)) {
     Import-Module dbatools 
 }
 
-$Global:SkToolsVersion = "1901.18.1"
+$Global:SkToolsVersion = "1901.20.3"
 
 function Import-SkConfig {
 	[CmdletBinding()]
@@ -80,6 +80,7 @@ function Import-SkConfig {
 # DATABASE FUNCTIONS
 
 function Get-SkQueryTableSingle {
+    [CmdletBinding()]
     param (
         [parameter(Mandatory=$False)]
 			[ValidateNotNullOrEmpty()]
@@ -94,7 +95,7 @@ function Get-SkQueryTableSingle {
     )
     $output = $null
     $result = $null
-    $Script:xxx = "$SearchField = $SearchValue"
+    #Write-Verbose "$SearchField = $SearchValue"
     if ($QueryFile -eq "" -and $Query -eq "") {
         $output = "NO QUERY OR QUERY FILE WAS SPECIFIED"
         return $output
@@ -113,36 +114,45 @@ function Get-SkQueryTableSingle {
         else {
             $result = @(Invoke-DbaQuery -SqlInstance $SkCmDbHost -Database "CM_$SkCmSiteCode" -Query $Query -ErrorAction Stop)
         }
-        if ([string]::IsNullOrEmpty($Script:SearchField) -and ![string]::IsNullOrEmpty($Script:SearchValue)) {
-            $SearchField = $($result[0].Table.Columns.ColumnName)[0]
-            $Script:xxx = "Searchfield remapped to $SearchField"
-            $result = $result | Where-Object {$_."$SearchField" -eq $Script:SearchValue}
-        }
-        else {
-            $result = $result | Where-Object {$_."$Script:SearchField" -eq $Script:SearchValue}
-        }
+        #Write-Verbose "$($result.Count) rows returned"
         if (![string]::IsNullOrEmpty($Columns)) {
-            $result   = $result | Select $Columns
+            $result   = $result | Select-Object $Columns
             $colcount = $Columns.Count
         }
         else {
-            $columns  = $result[0].Table.Columns.ColumnName
-            $result   = $result | Select $Columns
+            $columns  = $result[0].Table.Columns.ColumnName | Where-Object {$_.ColumnName -notin ('RowError','RowState','Table','ItemArray','HasErrors')} 
             $colcount = $columns.Count
+            $result   = $result | Select-Object $Columns
         }
-        $output   = "<table id=table2>"
-        foreach ($rs in $result) {
-            for ($i = 0; $i -lt $rs.psobject.Properties.Name.Count; $i++) {
-                $fn  = $rs.psobject.Properties.Name[$i]
-                $fv  = $rs.psobject.Properties.Value[$i]
+        #Write-Verbose "$colcount columns"
+        if ([string]::IsNullOrEmpty($Script:SearchField) -and ![string]::IsNullOrEmpty($Script:SearchValue)) {
+            $SearchField = $($result[0].Table.Columns.ColumnName)[0]
+            #Write-Verbose "Searchfield remapped to $SearchField"
+            $result = $result | Where-Object {$_."$SearchField" -eq "$SearchValue"}
+        }
+        else {
+            #Write-Verbose "filtering on $SearchField is $SearchValue"
+            $result = $result | Where-Object {$_."$SearchField" -eq "$SearchValue"}
+        }
+        #Write-Verbose "$($result.Count) rows in result"
+        $output = "<table id=table2>"
+        #Write-Verbose "entering foreach"
+        foreach ($rs in $result.psobject.Properties) {
+			$fn = $rs.Name
+			if ($fn -in $columns) {
+                $fv  = $rs.Value
                 $fvx = Get-SKDbValueLink -ColumnName $fn -Value $fv
                 $output += "<tr><td class=`"t2td1`">$fn</td><td class=`"t2td2`">$fvx</td></tr>"
+            }
+            else {
+                #Write-Verbose "$fn is excluded"
             }
         }
         $output += "</table>"
     }
     catch {
-        $output = "<table id=table2><tr><td>No matching items found<br/>qpath: $qpath<br/>qfile: $qfile</td></tr></table>"
+        $output = "<table id=table2><tr><td>No matching items found<br/>qpath: $qpath<br/>qfile: $qfile"
+        $output += "<br/>Error: $($Error[0].Exception.Message)</td></tr></table>"
     }
     finally {
         Write-Output $output
@@ -235,12 +245,12 @@ function Get-SkQueryTableMultiple {
             }
         }
         if (![string]::IsNullOrEmpty($Columns)) {
-            $result = $result | Select $Columns
+            $result   = $result | Select-Object $Columns
             $colcount = $Columns.Count
         }
         else {
-            $columns = $result[0].Table.Columns.ColumnName
-            $result = $result | Select $Columns
+            $columns  = $result[0].Table.Columns.ColumnName
+            $result   = $result | Select-Object $Columns
             $colcount = $columns.Count
         }
         $output = "<table id=table1><tr>"
@@ -340,6 +350,10 @@ function Get-SKDbValueLink {
                 $output = "<a href=`"cmcollection.ps1?f=collectionid&v=$Value&t=$Misc&n=&tab=general`" title=`"Details`">$Value</a>"
                 break;
             }
+			'AssignmentID' {
+				$output = "<a href=`"cmreport1.ps1?f=AssignmentID&v=$Value&tab=general`" title=`"Assignment Details`">$Value</a>"
+				break;
+			}
             #'CollectionName' {
             #    $output = "<a href=`"cmcollection.ps1?f=collectionname&v=$Value&t=$Misc&n=$Value`" title=`"Details`">$Value</a>"
             #    break;
@@ -353,7 +367,14 @@ function Get-SKDbValueLink {
                 break;
             }
             {($_ -eq 'UserName') -or ($_ -eq 'UserName0')} {
-                $output = "<a href=`"cmuser.ps1?f=UserName&v=$Value&n=$Value&x=equals&tab=general`" title=`"Details`">$Value</a>"
+				if ($Value -match '\\') {
+					$x = $Value -split '\\'
+					if ($x.Count -gt 1) { $fvx = $x[1] } else { $fvx = $x[0] }
+				}
+				else {
+					$fvx = $Value
+				}
+                $output = "<a href=`"cmuser.ps1?f=UserName&v=$fvx&n=$fvx&x=equals&tab=general`" title=`"Details`">$Value</a>"
                 break;
             }
             'Department' {
@@ -445,7 +466,15 @@ function Get-SKDbValueLink {
             }
             'DaysOfWeek' {
                 $vlist = @{1 = 'Su'; 2 = 'M'; 4 = 'Tu'; 8 = 'W'; 16 = 'Th'; 32 = 'F'; 64 = 'Sa'}
-                $output = ($vlist.Keys | where {$_ -band $Value} | sort-object | foreach {$vlist.Item($_)}) -join ', '
+                $output = ($vlist.Keys | Where-Object {$_ -band $Value} | Sort-Object | Foreach-Object {$vlist.Item($_)}) -join ', '
+                break;
+            }
+            'InstallState' {
+                switch ($Value) {
+                    'Enabled'  { $output = "<span style=`"color:green`">$Value</span>"; break; }
+                    'Disabled' { $output = "<span style=`"color:lightgray`">$Value</span>"; break; }
+                    default { $output = $Value; break; }
+                }
                 break;
             }
             'DeleteOlderThan' {
@@ -458,6 +487,14 @@ function Get-SKDbValueLink {
             }
             'PCT' {
                 $output = "$Value`%"
+                break;
+            }
+            'ProductName' {
+                $output = "<a href=`"cmreport3.ps1?f=ProductName&v=$(Get-SkUrlEncode -StringVal $Value)`" title=`"Computers with $Value`">$Value</a>"
+                break;
+            }
+            'FileID' {
+                $output = "<a href=`"cmreport2.ps1?f=FileID&v=$Value`" title=`"Computers with $Value`">$Value</a>"
                 break;
             }
             default {
@@ -478,7 +515,7 @@ function Get-SKDbCellTextAlign {
     $output = ""
     $centerlist = ('LimitedTo','Members','Variables','Type','PackageID','LastContacted','MessageID','MessageType','Severity',
         'SiteCode','SiteSystem','TimeReported','Enabled','BeginTime','LatestBeginTime','BackupLocation','DeleteOlderThan',
-        'PackageType','PkgType','SiteStatus','Status','State','Info','Warning','Error')
+        'PackageType','PkgType','SiteStatus','Status','State','Info','Warning','Error','InstallState')
     $rightlist = ('DiskSize','FreeSpace','Used','PCT','Installs','Clients','QTY')
     if ($centerlist -contains $ColumnName) {
         $output = 'center'
@@ -498,9 +535,17 @@ function Get-SKDbCellTextColor {
         $Value
     )
     $output = $Value
-    $redlist = ('State=Stopped')
+    $greenlist = ('Enabled')
+    $redlist   = ('State=Stopped')
+    $graylist  = ('Disabled')
     if ($redlist -contains "$ColumnName`=$Value") {
         $output = "<span style=`"color:red`">$Value</span>"
+    }
+    if ($greenlist -contains "$ColumnName`=$Value") {
+        $output = "<span style=`"color:green`">$Value</span>"
+    }
+    if ($graylist -contains "$ColumnName`=$Value") {
+        $output = "<span style=`"color:lightgray`">$Value</span>"
     }
     Write-Output $output
 }
@@ -2246,8 +2291,8 @@ function Get-SkShortcut {
 }
 
 function Get-SkToolsInfo {
-	Write-Host "skattertools $Global:SkToolsVersion is loaded and ready. You should get loaded too." -ForegroundColor Green
-	Write-Host "(just don't get loaded and go driving or anything). Please read the license page for terms and other boring stuff" -ForegroundColor Green
+	Write-Host "skattertools $Global:SkToolsVersion is loaded and ready. Don't get loaded at work!" -ForegroundColor Green
+	Write-Host "Please read the license page for terms and other boring stuff (Sorry. No pictures)" -ForegroundColor Green
 }
 
     Import-SkConfig

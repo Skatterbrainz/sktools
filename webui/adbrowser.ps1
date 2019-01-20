@@ -97,4 +97,4 @@ finally {
     $content += "</td></tr></table>"
 }
 
-Show-SkPage
+Write-SkWebContent

@@ -19,4 +19,4 @@ $params = @{
 $content = Get-SkQueryTableSingle @params
 $content += Write-SkDetailView -PageRef "cmscript.ps1" -Mode $Detailed
 
-Show-SkPage
+Write-SkWebContent

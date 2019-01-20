@@ -11,4 +11,4 @@ $pagelink = "cmcerts.ps1"
 
 $content = Get-SkQueryTableMultiple -QueryFile "cmcerts.sql" -PageLink $PageTitle -Columns ('ServerName','IssuedTo','CertType','KeyType','ValidFrom','ValidUntil','Approved','Blocked')
 
-Show-SkPage
+Write-SkWebContent

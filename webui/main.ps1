@@ -1,6 +1,4 @@
 $PageTitle = "Welcome $PoshUserName !"
-
 $tabset = ""
-$content = "<img src=`"graphics/sktools4.png`" border=`"0`" alt=`"`" />"
-
-Show-SkPage
+$content = "<img src=`"graphics/sktools1901.png`" border=`"0`" alt=`"`" />"
+Write-SkWebContent

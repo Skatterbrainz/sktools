@@ -114,4 +114,4 @@ $tabs = @('General','Groups','Devices')
 $tabset = New-SkMenuTabSet2 -MenuTabs $tabs -BaseLink "aduser.ps1"
 $content += Write-SkDetailView -PageRef "aduser.ps1" -Mode $Detailed
 
-Show-SkPage
+Write-SkWebContent

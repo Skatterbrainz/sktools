@@ -1,15 +1,16 @@
 ﻿Get-SkParams
 
 $PageTitle   = "CM AD Forest Discovery"
-if (![string]::IsNullOrEmpty($Script:SearchValue)) {
-    $PageTitle += ": $($Script:SearchValue)"
-}
+#$SearchValue = ""
 $content  = ""
 $menulist = ""
 $tabset   = ""
 $pagelink = "cmforestdisc.ps1"
+$params = @{
+	QueryFile = "cmforests.sql" 
+	PageLink  = $pagelink
+}
+$content = Get-SkQueryTableMultiple @params
+$content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 
-$content = Get-SkQueryTableMultiple -QueryFile "cmforests.sql" -PageLink "cmforests.ps1" -Columns ('ForestID','SMSSiteCode','SMSSiteName','LastDiscoveryTime','LastDiscoveryStatus','LastPublishingTime','PublishingStatus','DiscoveryEnabled','PublishingEnabled')
-$content += Write-SkDetailView -PageRef "cmforestdisc.ps1" -Mode $Detailed
-
-Show-SkPage
+Write-SkWebContent

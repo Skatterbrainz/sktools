@@ -27,4 +27,4 @@ switch ($Script:TabSelected) {
 $tabs = @('General','Programs','Advertisements')
 $tabset = New-SkMenuTabSet2 -MenuTabs $tabs -BaseLink "cmpackage.ps1"
 
-Show-SkPage
+Write-SkWebContent
