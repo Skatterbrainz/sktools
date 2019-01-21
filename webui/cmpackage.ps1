@@ -19,8 +19,7 @@ switch ($Script:TabSelected) {
         break;
     }
     'Advertisements' {
-        $content = "<table id=table2><tr><td style=`"height:200px;text-align:center`">"
-        $content += "Coming soon</td></tr></table>"
+		$content = Get-SkQueryTableMultiple -QueryFile "cmadvertisements.sql" -PageLink $pagelink -Columns ('AdvertisementName','AdvertisementID','PackageName','PackageID','ProgramName','CollectionID','CollectionName') -Sorting 'PackageName' -NoCaption
         break;
     }
 }

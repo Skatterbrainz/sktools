@@ -19,6 +19,7 @@ if ($SkAdEnabled -ne 'false') {
 		<li class="limenu"><a href="adforest.ps1" target="main" title="AD Forest">Forest</a></li>
         <li class="limenu"><a href="addomain.ps1" target="main" title="AD Domain">Domain</a></li>
 		<li class="limenu"><a href="adsites.ps1" target="main" title="AD Sites">Sites</a></li>
+		<li class="limenu"><a href="adsitelinks.ps1" target="main" title="AD Site Links">Site Links</a></li>
 		<li class="limenu"><a href="adbrowser.ps1" target="main" title="AD OU Explorer">OU Explorer</a></li>
         <li class="limenu"><a href="adreps.ps1" target="main">AD Reports</a></li>
 	</ul>
@@ -82,16 +83,9 @@ if ($SkCmEnabled -ne 'false') {
         <li class="limenu"><a href="cmforestdisc.ps1" target="main" title="AD Forest Discovery and Publishing">AD Forest</a></li>
 		<li class="limenu"><a href="cmbgroups.ps1" target="main" title="Boundary Groups">Boundary Groups</a></li>
 		<li class="limenu"><a href="cmservers.ps1?rc=dp" target="main" title="Distribution Points">Distribution Points</a></li>
-        <li class="limenu">Management Points</li>
-        <li class="limenu">Reporting Points</li>
-        <li class="limenu">SW Update Points</li>
-        <li class="limenu">Fallback Status</li>
-		<li class="limenu">Site Components</li>
         <li class="limenu"><a href="cmsumtasks.ps1" target="main" title="Summary Tasks">Summary Tasks</a></li>
         <li class="limenu"><a href="cmcerts.ps1" target="main" title="Certificates">Certificates</a></li>
-		<li class="limenu">Client Settings</li>
 		<li class="limenu"><a href="cmtasks.ps1" target="main" title="Maintenance Tasks">Maintenance Tasks</a></li>
-		<li class="limenu">Accounts</li>
 		<li class="limenu"><a href="cmroles.ps1" target="main" title="Security Roles">Roles</a></li>
 		<li class="limenu"><a href="cmadmins.ps1" target="main" title="Security Admins">Admins</a></li>
 	</ul>

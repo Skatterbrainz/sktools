@@ -1,8 +1,9 @@
-﻿$theme      = $PoshPost.Theme
-$cmdbhost   = $PoshPost.SkCmDBHost
-$cmsitecode = $PoshPost.SkCmSiteCode
-$cmsmsprov  = $PoshPost.SkCmSMSProvider
-$cmenabled  = $PoshPost.SkCmEnabled
+﻿$theme       = $PoshPost.Theme
+$cmdbhost    = $PoshPost.SkCmDBHost
+$cmsitecode  = $PoshPost.SkCmSiteCode
+$cmsmsprov   = $PoshPost.SkCmSMSProvider
+$cmenabled   = $PoshPost.SkCmEnabled
+$debugenable = $PoshPost.SkDebug
 
 $themefile = "st$theme.css"
 
@@ -22,6 +23,7 @@ try {
         SkCmSMSProvider      = $cmsmsprov
         SkCmSiteCode         = $cmsitecode
         SkCmCollectionManage = "TRUE"
+		SkDebug              = $debugenable
     }
     $params.Keys | %{ "$($_) = $($params.Item($_))" } | Out-File $cfgfile
 
@@ -31,6 +33,7 @@ try {
 <tr><td>CM SMS Provider</td><td>$cmsmsprov</td></tr>
 <tr><td>CM Site Code</td><td>$cmsitecode</td></tr>
 <tr><td>CM Enabled</td><td>$cmenabled</td></tr>
+<tr><td>Debug Enabled</td><td>$debugenable</td></tr>
 </table>"
 }
 catch {

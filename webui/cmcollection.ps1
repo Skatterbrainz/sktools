@@ -13,20 +13,21 @@ if ([string]::IsNullOrEmpty($Script:CustomName)) {
 else {
     $collName = $Script:CustomName
 }
-
 if (![string]::IsNullOrEmpty($collName)) {
     $PageTitle += ": $collName"
 }
 
-if ($CollectionType -eq '2') {
+$mType = ""
+$mType = Get-SkCmObjectName -TableName "v_CollectionRuleQuery" -SearchProperty "CollectionID" -SearchValue $Script:SearchValue -ReturnProperty "CollectionID"
+if ($mType -ne "") { $RuleGroup = 'QUERY' } else { $RuleGroup = 'DIRECT' }
+
+if ($CollType -eq '2') {
     $Ctype    = "Device"
     $ResType  = 5
-    $CollType = 2
 }
 else {
     $Ctype    = "User"
     $ResType  = 4
-    $CollType = 1
 }
 
 switch ($Script:TabSelected) {
@@ -43,21 +44,45 @@ switch ($Script:TabSelected) {
     'Members' {
         $xxx = "Collection Type: $CollType"
         if ($CollType -eq 2) {
-            $qfile = "cmdevicecollectionmembers.sql"
+            $qfile   = "cmdevicecollectionmembers.sql"
             $columns = ('ComputerName','ResourceID','ResourceType','Domain','SiteCode','RuleType','CollectionID')
+			$sorton  = 'ComputerName'
         }
         else {
-            $qfile = "cmusercollectionmembers.sql"
+            $qfile   = "cmusercollectionmembers.sql"
             $columns = ('UserName','UserFullName','ResourceID','Domain','SiteCode','RuleType','CollectionID')
+			$sorton  = 'UserName'
         }
 		$params = @{
 			QueryFile  = $qfile
 			PageLink   = $pagelink
 			Columns    = $columns
+			Sorting    = $sorton
 			NoUnFilter = $True
 			NoCaption  = $True
 		}
         $content = Get-SkQueryTableMultiple @params
+		if ($RuleGroup -ne 'QUERY' -and $SkCmCollectionManage -eq "true") {
+			$members  = Get-SkCmCollectionMembers -CollectionID $Script:SearchValue -CollectionType $Ctype -Inverse
+			if ($members.count -gt 0) {
+				$content += "<form name='form1' id='form1' method='post' action='addmember.ps1'>"
+				$content += "<input type='hidden' name='collname' id='collname' value='$CollectionName' />"
+				$content += "<input type='hidden' name='collid' id='collid' value='$Script:SearchValue' />"
+				$content += "<input type='hidden' name='colltype' id='colltype' value='$colltype' />"
+				$content += "<input type='hidden' name='restype' id='restype' value='$restype' />"
+				$content += "<input type='hidden' name='targettype' id='targettype' value='collection' />"
+				$content += "<table id=table2><tr><td>"
+				$content += "<select name='resid' id='resid' size=1 style='width:500px;padding:5px'>"
+				$content += "<option value=`"`"></option>"
+				foreach ($row in $members) {
+					$rid = $row.ResourceID
+					$rnn = $row.Name
+					$content += "<option value=`"$rid`:$rnn`">$rnn</option>"
+				}
+				$content += "</select> <input type='submit' name='ok' id='ok' value='Add' class='button1' />"
+				$content += " (direct membership collections only)</td></tr></table></form>"
+			}
+		}
         break;
     }
     'QueryRules' {
@@ -65,6 +90,10 @@ switch ($Script:TabSelected) {
         $content = Get-SkQueryTableMultiple -QueryFile "cmcollectionqueryrules.sql" -PageLink $pagelink -Columns ('RuleName','QueryID','QueryExpression','LimitToCollectionID') -NoUnFilter -NoCaption -Sorting "RuleName"
         break;
     }
+	'Deployments' {
+		$content = Get-SkQueryTableMultiple -QueryFile "cmadvertisements.sql" -PageLink $pagelink -Columns ('AdvertisementName','AdvertisementID','PackageName','PackageID','ProgramName') -Sorting 'PackageName' -NoCaption
+		break;
+	}
     'Variables' {
         $content = Get-SkQueryTableMultiple -QueryFile "cmcollectionvariables.sql" -PageLink $pagelink -Columns ('Name','Value','IsMasked')
         break;
@@ -83,7 +112,7 @@ switch ($Script:TabSelected) {
     }
 } # switch
 
-$tabs = @('General','Members','QueryRules','Variables','Tools')
+$tabs = @('General','Members','QueryRules','Deployments','Variables','Tools')
 $tabset  = New-SkMenuTabSet2 -MenuTabs $tabs -BaseLink "cmcollection.ps1?t=$CollType"
 $content += Write-SkDetailView -PageRef "cmcollection.ps1" -Mode $Detailed
 

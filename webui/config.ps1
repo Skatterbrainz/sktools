@@ -47,7 +47,7 @@ if (!(Get-Module dbatools)) {
     Import-Module dbatools 
 }
 
-$Global:SkToolsVersion = "1901.20.3"
+$Global:SkToolsVersion = "1901.20.5"
 
 function Import-SkConfig {
 	[CmdletBinding()]
@@ -70,7 +70,7 @@ function Import-SkConfig {
 					}
 				}
             }
-    $Global:SkPath = Split-Path $PSScriptRoot
+    $Global:SkPath        = Split-Path $PSScriptRoot
     $Global:SkQueryPath   = Join-Path $Global:SkPath -ChildPath "queries"
     $Global:SkReportsPath = Join-Path $Global:SkPath -ChildPath "reports"
     $Global:SkWebPath     = Join-Path $Global:SkPath -ChildPath "webui"
@@ -330,6 +330,15 @@ function Get-SKDbValueLink {
                 }
                 break;
             }
+			{($_ -eq 'BeginTime') -or ($_ -eq 'LatestBeginTime')} {
+				if ($Value -ge 100) {
+					$output = ([string]$Value).Substring(0,1) + ':00'
+				}
+				else {
+					$output = [string]$Value + ':00'
+				}
+				break;
+			}
             'ADComputerName' {
                 $output = "<a href=`"adcomputer.ps1?f=name&v=$Value&n=$Value&x=equals&tab=general`" title=`"Details for $Value`">$Value</a>"
                 break;
@@ -352,6 +361,10 @@ function Get-SKDbValueLink {
             }
 			'AssignmentID' {
 				$output = "<a href=`"cmreport1.ps1?f=AssignmentID&v=$Value&tab=general`" title=`"Assignment Details`">$Value</a>"
+				break;
+			}
+			'AdvertisementID' {
+				$output = "<a href=`"cmadvertisement.ps1?f=AdvertisementID&v=$Value&tabl=general`" title=`"Advertisement Details`">$Value</a>"
 				break;
 			}
             #'CollectionName' {
@@ -548,47 +561,6 @@ function Get-SKDbCellTextColor {
         $output = "<span style=`"color:lightgray`">$Value</span>"
     }
     Write-Output $output
-}
-
-function Get-SkCmCollectionName {
-    param (
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullOrEmpty()]
-        [string] $CollectionID
-    )
-    $output = ""
-    try {
-        $output = (Invoke-DbaQuery -SqlInstance $Global:SkCmDbHost -Database "CM_$SkCmSiteCode" -Query "select name from v_collection where collectionid = '$CollectionID'").Name
-    }
-    catch {}
-    finally {
-        Write-Output $output
-    }
-}
-
-function Get-SkCmObjectName {
-    param (
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullOrEmpty()]
-        [string] $TableName,
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullOrEmpty()]
-        [string] $SearchProperty,
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullOrEmpty()]
-        [string] $SearchValue,
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullOrEmpty()]
-        [string] $ReturnProperty
-    )
-    $output = ""
-    try {
-        $output = (Invoke-DbaQuery -SqlInstance $Global:SkCmDbHost -Database "CM_$SkCmSiteCode" -Query "select $ReturnProperty from $TableName where $SearchProperty = '$SearchValue'") | Select -ExpandProperty $ReturnProperty
-    }
-    catch {}
-    finally {
-        Write-Output $output
-    }
 }
 
 #---------------------------------------------------------------------
@@ -954,6 +926,52 @@ function Get-SkAdOuObjects {
     }
 }
 
+# adapted from: https://github.com/lazywinadmin/PowerShell/blob/master/AD-SITE-Get-ADSiteInventory/Get-ADSiteInventory.ps1
+
+function Get-SkADSiteLinks {
+    [CmdletBinding()]
+    param()
+    $Forest = [System.DirectoryServices.ActiveDirectory.Forest]::GetCurrentForest()
+    Write-Verbose -message "[$ScriptName][PROCESS] Retrieve current Forest sites"
+    $SiteInfo = [System.DirectoryServices.ActiveDirectory.Forest]::GetCurrentForest().Sites
+
+    # Forest Context
+    Write-Verbose -message "[$ScriptName][PROCESS] Create forest context"
+    $ForestType = [System.DirectoryServices.ActiveDirectory.DirectoryContexttype]"forest"
+    $ForestContext = New-Object -TypeName System.DirectoryServices.ActiveDirectory.DirectoryContext -ArgumentList $ForestType,$Forest
+
+    $Configuration = ([ADSI]"LDAP://RootDSE").configurationNamingContext
+    $SubnetsContainer = [ADSI]"LDAP://CN=Subnets,CN=Sites,$Configuration"
+    foreach ($item in $SiteInfo) {
+        $LinksInfo = ([System.DirectoryServices.ActiveDirectory.ActiveDirectorySite]::FindByName($ForestContext,$($item.name))).SiteLinks
+        New-Object -TypeName PSObject -Property @{
+	        Name= $item.Name
+            SiteLinks = $item.SiteLinks -join ","
+	        Servers = $item.Servers -join ","
+	        Domains = $item.Domains -join ","
+	        Options = $item.options
+	        AdjacentSites = $item.AdjacentSites -join ','
+	        InterSiteTopologyGenerator = $item.InterSiteTopologyGenerator
+	        Location = $item.location
+            Subnets = ( $info = Foreach ($i in $item.Subnets.name){
+                $SubnetAdditionalInfo = $SubnetsContainer.Children | Where-Object {$_.name -like "*$i*"}
+                "$i -- $($SubnetAdditionalInfo.Description)" }) -join ","
+	        #SiteLinksInfo = $LinksInfo | fl *
+	                
+	        #SiteLinksInfo = New-Object -TypeName PSObject -Property @{
+	            SiteLinksCost = $LinksInfo.Cost -join ","
+	            ReplicationInterval = $LinksInfo.ReplicationInterval -join ','
+	            ReciprocalReplicationEnabled = $LinksInfo.ReciprocalReplicationEnabled -join ','
+	            NotificationEnabled = $LinksInfo.NotificationEnabled -join ','
+	            TransportType = $LinksInfo.TransportType -join ','
+	            InterSiteReplicationSchedule = $LinksInfo.InterSiteReplicationSchedule -join ','
+	            DataCompressionEnabled = $LinksInfo.DataCompressionEnabled -join ',' 
+	        #}
+	        #>
+	    }#New-Object -TypeName PSoBject
+    }
+}
+
 function Get-SkValueLinkAD {
     param (
         [parameter(Mandatory=$True)]
@@ -1280,6 +1298,81 @@ function Get-SkCmDeviceCollectionMemberships {
     }
 }
 
+function Get-SkCmUserCollectionMemberships {
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory=$True)]
+			[ValidateNotNullOrEmpty()]
+			[string] $UserName,
+        [parameter(Mandatory=$False)]
+			[switch] $Inverse
+    )
+    $output = $null
+    try {
+        if (!$Inverse) {
+            $query = "SELECT DISTINCT 
+	            v_FullCollectionMembership.CollectionID, 
+	            v_Collection.Name as [CollectionName] 
+            FROM v_FullCollectionMembership INNER JOIN v_Collection ON 
+	            v_FullCollectionMembership.CollectionID = v_Collection.CollectionID 
+            WHERE v_FullCollectionMembership.Name = '$UserName'"
+        }
+        else {
+            $query = "SELECT DISTINCT 
+	            v_Collection.CollectionID, v_Collection.Name, v_Collection.CollectionType 
+            FROM v_Collection 
+            WHERE 
+                (CollectionID NOT IN 
+                    (SELECT DISTINCT CollectionID from v_CollectionRuleQuery) )
+                AND
+                    (v_Collection.CollectionType = 1)
+	            AND 
+	            (v_Collection.CollectionID NOT IN (
+		            SELECT DISTINCT CollectionID 
+		            FROM v_FullCollectionMembership 
+		            WHERE Name = '$UserName' 
+	            ))
+            ORDER BY v_Collection.Name"
+        }
+        #Write-Verbose $query
+        $output = @(Invoke-DbaQuery -SqlInstance $SkCmDbHost -Database "CM_$SkCmSiteCode" -Query $query -ErrorAction SilentlyContinue)
+    }
+    catch {}
+    finally {
+        Write-Output $output -NoEnumerate
+    }
+}
+
+function Get-SkCmCollectionMembers {
+	param (
+		[parameter(Mandatory=$True)]
+		[ValidateNotNullOrEmpty()]
+		[string] $CollectionID,
+		[parameter(Mandatory=$True)]
+		[ValidateSet('device','user')]
+		[string] $CollectionType,
+		[switch] $Inverse
+	)
+	$members = $null
+	try {
+		if ($CollectionType -eq 'device') {
+			$qx = "select ResourceID,Name0 as [Name] from v_R_System 
+			where ResourceID not in (select ResourceID from v_FullCollectionMembership_Valid where CollectionID='$CollectionID') 
+			order by Name0"
+		}
+		else {
+			$qx = "select ResourceID,User_Name0 as [Name] from v_R_User
+			where ResourceID not in (select ResourceID from v_FullCollectionMembership_Valid where CollectionID='$CollectionID') 
+			order by User_Name0"
+		}
+		$members = @(Invoke-DbaQuery -SqlInstance $SkCmDBHost -Database "CM_$SkCmSiteCode" -Query $qx -ErrorAction SilentlyContinue)
+	}
+	catch {}
+	finally {
+		Write-Output $members -NoEnumerate
+	}
+}
+
 function Get-SkCmPackageTypeName {
     param (
         [parameter(Mandatory=$True)]
@@ -1297,6 +1390,47 @@ function Get-SkCmPackageTypeName {
         258 { return 'Boot Image Package'; break; }
         259 { return 'OS Upgrade Package'; break; }
         260 { return 'VHD Package'; break; }
+    }
+}
+
+function Get-SkCmCollectionName {
+    param (
+        [parameter(Mandatory=$True)]
+        [ValidateNotNullOrEmpty()]
+        [string] $CollectionID
+    )
+    $output = ""
+    try {
+        $output = (Invoke-DbaQuery -SqlInstance $Global:SkCmDbHost -Database "CM_$SkCmSiteCode" -Query "select name from v_collection where collectionid = '$CollectionID'").Name
+    }
+    catch {}
+    finally {
+        Write-Output $output
+    }
+}
+
+function Get-SkCmObjectName {
+    param (
+        [parameter(Mandatory=$True)]
+        [ValidateNotNullOrEmpty()]
+        [string] $TableName,
+        [parameter(Mandatory=$True)]
+        [ValidateNotNullOrEmpty()]
+        [string] $SearchProperty,
+        [parameter(Mandatory=$True)]
+        [ValidateNotNullOrEmpty()]
+        [string] $SearchValue,
+        [parameter(Mandatory=$True)]
+        [ValidateNotNullOrEmpty()]
+        [string] $ReturnProperty
+    )
+    $output = ""
+    try {
+        $output = (Invoke-DbaQuery -SqlInstance $Global:SkCmDbHost -Database "CM_$SkCmSiteCode" -Query "select $ReturnProperty from $TableName where $SearchProperty = '$SearchValue'") | Select -ExpandProperty $ReturnProperty
+    }
+    catch {}
+    finally {
+        Write-Output $output
     }
 }
 
@@ -1514,7 +1648,10 @@ function Write-SkDetailView {
         [parameter(Mandatory=$False)]
         [string] $Mode = ""
     )
-    if ($Mode -eq "1") {
+	if ($Global:SkDebug -ne "TRUE") {
+		$output = ""
+	}
+    elseif ($Mode -eq "1") {
         $output = @"
 <h3>Page Details</h3><table id=tabledetail>
 <tr><td style=`"width:200px;`">SearchField</td><td>$($Script:SearchField)</td></tr>

@@ -55,6 +55,17 @@ $content = "<table id=table2>
         </select>
     </td>
 </tr>
+<tr>
+    <td class=`"t2td1`">
+        Debugging Enabled
+    </td>
+    <td class=`"t2td2`">
+        <select name=`"SkDebug`" id=`"SkDebug`" size=`"1`" style=`"padding:5px;width:100px;`">
+			<option value=`"FALSE`">No</option>
+            <option value=`"TRUE`">Yes</option>
+        </select>
+    </td>
+</tr>
 </table>"
 
 @"

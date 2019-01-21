@@ -9,7 +9,7 @@ $menulist = ""
 $tabset   = ""
 $pagelink = Split-Path -Leaf $MyInvocation.MyCommand.Definition
 
-$plist = @('General','BIOS','Computer','Disks','Events - Application','Events - System','Groups','Local Groups','Network','Operating System','Processor','Software','Startup','Updates','User Profiles','Tools')
+$plist = @('General','BIOS','Computer','Disks','Events - Application','Events - System','Local Groups','Local Users','Network','Operating System','Processor','Software','Startup','Updates','User Profiles','Tools')
 $menulist = New-SkMenuList -PropertyList $plist -TargetLink "adcomputer.ps1?v=$Script:SearchValue" -Default $Script:TabSelected
 $tabset   = $menulist
 
@@ -141,7 +141,8 @@ switch ($Script:TabSelected) {
     }
     'Operating System' {
         try {
-            $content = Get-SkWmiPropTableSingle -ComputerName $Script:SearchValue -WmiClass "Win32_OperatingSystem" -Columns ("Caption","Build","Version") -SortField 'Caption'
+            $content = Get-SkWmiPropTableSingle -ComputerName $Script:SearchValue -WmiClass "Win32_OperatingSystem"
+            #$content = Get-SkWmiPropTableSingle -ComputerName $Script:SearchValue -WmiClass "Win32_OperatingSystem" -Columns ("Caption","Build","Version") -SortField 'Caption'
         }
         catch {
 			$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
@@ -175,14 +176,6 @@ switch ($Script:TabSelected) {
         }
 		break;
 	}
-    'Groups' {
-        try {
-            $groups = Get-SkAdUserGroups -UserName "$SearchValue"
-            $content = "<table id=table2><tr><td style=`"height:150px`">Stay tuned for more</td></tr></table>"
-        }
-        catch {}
-        break;
-    }
     'Local Groups' {
         try {
             $content = (Get-WmiObject -Class "Win32_Group" -ComputerName $SearchValue -Filter "Domain = '$SearchValue'" | Select Name,Description,SID | Sort-Object Name | ConvertTo-Html -Fragment) -replace '<table>','<table id=table1>'
@@ -192,6 +185,26 @@ switch ($Script:TabSelected) {
         }
         break;
     }
+	'Local Users' {
+		try {
+			$users = @(Get-WmiObject -Class "Win32_UserAccount" -ComputerName $SearchValue -Filter "Domain = '$SearchValue'" -ErrorAction SilentlyContinue)
+			$content = "<table id=table1>"
+			$content += "<tr><td>Name</td><td>Description</td><td>SID</td><td>Type</td></tr>"
+			foreach ($user in $users) {
+				$content += "<tr>"
+				$content += "<td>$($user.Name)</td>"
+				$content += "<td>$($user.Description)</td>"
+				$content += "<td>$($user.SID)</td>"
+				$content += "<td>$($user.AccountType)</td>"
+				$content += "</tr>"
+			}
+			$content += "</table>"
+		}
+		catch {
+			$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
+		}
+		break;
+	}
     'Startup' {
         try {
             $content = Get-SkWmiPropTableMultiple -ComputerName $SearchValue -WmiClass "Win32_StartupCommand" -Columns ('Name','Description','Command','Location') -SortField 'Name'

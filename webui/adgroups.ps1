@@ -1,4 +1,4 @@
-﻿Get-SkParams | Out-Null
+﻿Get-SkParams
 
 $PageTitle   = "AD Groups"
 if (![string]::IsNullOrEmpty($Script:SearchValue)) {
@@ -9,7 +9,13 @@ $menulist = ""
 $tabset   = ""
 $pagelink = Split-Path -Leaf $MyInvocation.MyCommand.Definition
 
-$tabset = New-MenuTabSet -BaseLink 'adgroups.ps1?x=begins&f=name&v=' -DefaultID $TabSelected
-$content = Get-SkAdObjectTableMultiple -ObjectType 'group' -Columns ('Name','Description') -SortColumn "Name" -NoSortHeadings
+$tabset = New-SkMenuTabSet -BaseLink "$pagelink`?x=begins&f=name&tab=general&v=" -DefaultID $TabSelected
+$params = @{
+	ObjectType = 'group' 
+	Columns    = ('Name','Description') 
+	SortColumn = "Name" 
+	NoSortHeadings = $True
+}
+$content = Get-SkAdObjectTableMultiple @params
 
 Write-SkWebContent

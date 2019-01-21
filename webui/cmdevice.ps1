@@ -35,7 +35,7 @@ switch ($TabSelected) {
             }
             $content = Get-SkQueryTableMultiple @params -NoUnFilter -NoCaption
             
-            if ($CmCollectionManage -eq 'TRUE') {
+            if ($SkCmCollectionManage -eq 'TRUE') {
                 $dcolls  = Get-SkCmDeviceCollectionMemberships -ComputerName $Script:SearchValue -Inverse
                 if ($dcolls.count -gt 0) {
                     $content += "<form name='form1' id='form1' method='post' action='cmaddmember.ps1'>"
@@ -43,7 +43,7 @@ switch ($TabSelected) {
                     $content += "<input type='hidden' name='resid' id='resid' value='$SearchValue' />"
                     $content += "<input type='hidden' name='restype' id='restype' value='5' />"
                     $content += "<table id=table2><tr><td>"
-                    $content += "<select name='collid' id='collid' size=1 style='width:500px;padding:5px'>"
+                    $content += "<select name='collname' id='collname' size=1 style='width:500px;padding:5px'>"
                     $content += "<option value=`"`"></option>"
                     foreach ($row in $dcolls) {
                         $cid = $row.CollectionID

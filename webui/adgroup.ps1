@@ -56,7 +56,7 @@ switch ($TabSelected) {
                 $content += "</tr>"
                 $rowcount++
             }
-            $content += "<tr><td colspan=5 class=lastrow>$(Write-RowCount -ItemName 'member' -RowCount $rowcount)</td></tr>"
+            $content += "<tr><td colspan=`"5`" class=`"lastrow`">$rowcount members found</td></tr>"
             $content += "</table><br/>"
             $content += "<form name=`"form11`" id=`"form11`" method=`"POST`" action=`"admod.ps1`">"
             $content += "<input type=hidden name=`"groupid`" id=`"groupid`" value=`"$SearchValue`" />"
@@ -70,7 +70,7 @@ switch ($TabSelected) {
         break;
     }
 } # switch
-$tabset  = New-SkMenuTabSet2 -MenuTabs $tabs -BaseLink "adgroup.ps1"
-$content += Write-SkDetailView -PageRef "adgroup.ps1" -Mode $Detailed
+$tabset  = New-SkMenuTabSet2 -MenuTabs $tabs -BaseLink $pagelink
+$content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 
 Write-SkWebContent

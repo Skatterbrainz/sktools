@@ -13,7 +13,8 @@ $links = @(
     'https://serverfault.com/questions/512228/how-to-check-ad-ds-domain-forest-functional-level-from-domain-joined-workstation',
     'https://blogs.msmvps.com/richardsiddaway/category/powershellandactivedirectory',
     'https://www.andersrodland.com/ultimate-sccm-querie-collection-list/',
-    'https://github.com/paulwetter/DocumentConfigMgrCB/blob/master/DocumentCMCB.ps1'
+    'https://github.com/paulwetter/DocumentConfigMgrCB/blob/master/DocumentCMCB.ps1',
+	'https://github.com/lazywinadmin/PowerShell/blob/master/AD-SITE-Get-ADSiteInventory/Get-ADSiteInventory.ps1'
 )
 $content = "<table id=table2>"
 foreach ($link in $links) {

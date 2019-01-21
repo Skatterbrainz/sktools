@@ -58,60 +58,10 @@ switch ($TabSelected) {
         catch {}
         break;
     }
-    'Devices' {
-        try {
-            $query = "SELECT DISTINCT
-                v_R_System.Name0 AS ADComputerName, 
-                v_GS_USER_PROFILE.LocalPath0 AS LocalPath, 
-                v_R_System.AD_Site_Name0 AS ADSite, 
-                v_GS_COMPUTER_SYSTEM.Model0 AS Model, 
-                v_GS_OPERATING_SYSTEM.Caption0 AS OperatingSystem, 
-                v_GS_OPERATING_SYSTEM.BuildNumber0 AS OSBuild, 
-                v_GS_USER_PROFILE.TimeStamp
-                FROM v_GS_USER_PROFILE INNER JOIN
-                v_R_System ON dbo.v_GS_USER_PROFILE.ResourceID = v_R_System.ResourceID INNER JOIN
-                v_GS_COMPUTER_SYSTEM ON 
-                v_GS_USER_PROFILE.ResourceID = v_GS_COMPUTER_SYSTEM.ResourceID INNER JOIN
-                v_GS_OPERATING_SYSTEM ON 
-                v_GS_USER_PROFILE.ResourceID = v_GS_OPERATING_SYSTEM.ResourceID
-                WHERE (v_GS_USER_PROFILE.LocalPath0 LIKE '%$SearchValue')
-                ORDER BY v_GS_USER_PROFILE.TimeStamp DESC"
-            $result = @(Invoke-DbaQuery -SqlInstance $CmDbHost -Database "CM_$CmSiteCode" -Query $query -ErrorAction Stop)
-            $rowcount = 0
-            $content = "<table id=table1><tr>"
-            if ($result.Count -gt 0) {
-                $columns  = $result[0].Table.Columns.ColumnName
-                $colcount = $columns.Count
-                $columns | ForEach-Object { $content += "<th>$_</th>" }
-                $content += "</tr>"
-                foreach ($rs in $result) {
-                    $content += "<tr>"
-                    foreach ($fn in $columns) {
-                        $fv = $rs."$fn"
-                        $fvx = Get-SKDbValueLink -ColumnName $col -Value $fv
-                        $content += "<td>$fvx</td>"
-                    }
-                    $content += "</tr>"
-                    $rowcount++
-                }
-            }
-            if ($rowcount -gt 0) {
-                $content += "<tr><td colspan=$colcount class=lastrow>$rowcount rows returned</td></tr>"
-            }
-            else {
-                $content += "<tr><td colspan=$colcount style=`"text-align:center`">No records found</td></tr></table>"
-            }
-            $content += "</table>"
-        }
-        catch {
-            $content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
-        }
-        break;
-    }
 }
 
-$tabs = @('General','Groups','Devices')
-$tabset = New-SkMenuTabSet2 -MenuTabs $tabs -BaseLink "aduser.ps1"
-$content += Write-SkDetailView -PageRef "aduser.ps1" -Mode $Detailed
+$tabs = @('General','Groups')
+$tabset = New-SkMenuTabSet2 -MenuTabs $tabs -BaseLink $pagelink
+$content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 
 Write-SkWebContent
