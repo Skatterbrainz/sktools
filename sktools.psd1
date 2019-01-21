@@ -12,7 +12,7 @@
     RootModule = 'sktools.psm1'
     
     # Version number of this module.
-    ModuleVersion = '1901.20.3'
+    ModuleVersion = '1901.20.5'
     
     # Supported PSEditions
     # CompatiblePSEditions = @()
