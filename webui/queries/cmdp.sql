@@ -1,6 +1,6 @@
 ﻿SELECT 
-	DPID,
 	ServerName,
+	DPID,
 	Description,
 	NALPath,
 	ShareName,

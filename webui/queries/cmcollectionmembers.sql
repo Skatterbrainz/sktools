@@ -13,3 +13,5 @@
     CollectionID
 FROM 
     v_FullCollectionMembership
+ORDER BY 
+	CollectionID, [Name]

@@ -1,5 +1,4 @@
-﻿/*  https://docs.microsoft.com/en-us/sccm/develop/reference/core/servers/manage/sms_statusmessage-server-wmi-class */
-select distinct 
+﻿select distinct 
     RecordID,
     Component,
     MessageID,
@@ -9,9 +8,9 @@ select distinct
         when (MessageType = 768) then 'Audit'
         when (MessageType = 1024) then 'NTEvent'
         end as MessageType,
-    case 
-        when (ABS(Severity) = 1073741824) then 'Info'
-        when (ABS(Severity) = 2147483648) then 'Warning'
+	case 
+        when (Severity = 1073741824) then 'Info'
+        when (Severity = 2147483648) then 'Warning'
         else 'Error' end as Severity,
     MachineName,
     ModuleName,
@@ -40,3 +39,4 @@ from
     vStatusMessages
 where 
     (DATEDIFF(HH,vStatusMessages.Time, GETDATE()) < 24)
+
