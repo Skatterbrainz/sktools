@@ -57,3 +57,37 @@ SkCmSiteCode = P01
 SkCmCollectionManage = TRUE
 SkDebug = FALSE
 ```
+
+# Testing Information
+
+sktools was developed with PowerShell 5.1 (aka Windows PowerShell 5.1).  It was also tested with
+the following operating systems and products:
+
+* Windows 10 Enterprise x64 1803, 1809
+* Windows Server 2016 Enterprise, Datacenter Edition
+* System Center Configuration Manager 1810, 1812
+* SQL Server 2016, 2017
+* Internet Explorer 11
+* Microsoft Edge
+* Google Chrome 72
+* Firefox 64
+* Brave 0.58
+
+# Known Issues and Limitations
+
+  * sktools interfaces to Configuration Manager use Windows Authentication, and will therefore allow
+    the same level of access to ConfigMgr features as the same user would have when using the 
+    Configuration Manager administration console.  The same is true with regards to permissions to
+    the Active Directory forest and domain environment.
+  * Integrated authentication often behaves differently by web browser.  For example, in some browsers
+    you may still be prompted to enter credentials when connecting to Configuration Manager or to
+    Active Directory.
+  * Antivirus and Antimalware products/services may interfere with SkatterTools.
+  * Firewall settings may interfere with remote connections to Active Directory, Configuration Manager
+    SQL Server, the SMS Provider, and to other Windows machines across the network.
+
+# Warranties and Terms of Use
+
+Terms of use are described in the license document included with the module.
+There are NO warranties of any kind whatsoever for this product/service/project.  USE AT YOUR OWN RISK.
+Never operate in a production environment without thorough testing and validation. 
