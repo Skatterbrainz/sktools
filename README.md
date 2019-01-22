@@ -22,7 +22,12 @@ SkatterTools PowerShell Module
   * To update the module, open a PowerShell console using "Run as Administrator"
   * Type ```Update-Module sktools -Force```
   * If a session was already running, terminate and restart it (e.g. ```Start-SkatterTools```)
-  
+
+# Default Port Setting
+
+By default, SkatterTools runs on TCP port 8080.  If you prefer another port, use the -Port parameter
+when launching the service.  For example, ```Start-SkatterTools -Port 8181```
+
 # skconfig.txt options
 
 If you will be using SkatterTools with a Configuration Manager site environment, you will need
