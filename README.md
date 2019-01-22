@@ -25,6 +25,14 @@ SkatterTools PowerShell Module
   
 # skconfig.txt options
 
+If you will be using SkatterTools with a Configuration Manager site environment, you will need
+to configure the settings in the skconfig.txt file, which is created in your Documents folder
+after using the ```Install-SkatterTools``` function.
+
+If you modify the skconfig.txt file while SkatterTools is running, you will need to terminate the
+PowerShell console which is running the PoSHServer service, and restart it.  If you also have the
+SkatterTools web console open, you can either refresh or close and re-open the browser.
+
 The example below is the default file configuration after using ```Install-SkatterTools```
 In most cases, you will want to change the SkCmDbHost, SkCmSMSProvider and SkCmSiteCode values.
 
