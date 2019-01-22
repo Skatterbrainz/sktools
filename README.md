@@ -91,3 +91,11 @@ the following operating systems and products:
 Terms of use are described in the license document included with the module.
 There are NO warranties of any kind whatsoever for this product/service/project.  USE AT YOUR OWN RISK.
 Never operate in a production environment without thorough testing and validation. 
+
+# Technical Support
+
+There is no official support provided with this product/project, however, feedback is ALWAYS welcome.
+Please submit comments, suggestions, and bug reports, using the "Issues" feature for the sktools 
+GitHub repository at https://github.com/Skatterbrainz/sktools/issues.  Enhancement requests will be
+reviewed to determine feasibility and responded to accordingly. If your enhancement request is 
+approved and implemented, your name will be associated with it in the application.
