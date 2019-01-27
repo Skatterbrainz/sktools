@@ -47,7 +47,7 @@ if (!(Get-Module dbatools)) {
     Import-Module dbatools 
 }
 
-$Global:SkToolsVersion = "1901.26.4"
+$Global:SkToolsVersion = "1901.27.1"
 
 function Import-SkConfig {
 	[CmdletBinding()]

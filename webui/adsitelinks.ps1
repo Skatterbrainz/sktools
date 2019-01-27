@@ -44,7 +44,23 @@ try {
 			}
 		}
 	}
-	$content = ($sitelinks | ConvertTo-Html -Fragment) -replace '<table>', '<table id=table1>'
+	$content = "<table id=table1>"
+	$content += "<tr><th>Link</th><th>SiteName</th><th>Subnets</th><th>Cost</th><th>Interval</th><th>Servers</th></tr>"
+	$sitelinks | %{
+		$sn = $($_.Servers).ToString().Trim()
+		$snx = ($sn -split '\.')[0]
+		$snx = "<a href=`"adcomputer.ps1?f=name&v=$snx&x=equals&tab=general`" title=`"Details for $sn`">$sn</a>"
+		$content += "<tr>"
+		$content += "<td>$($_.SiteLinks)</td>"
+		$content += "<td>$($_.Name)</td>"
+		$content += "<td>$($_.Subnets)</td>"
+		$content += "<td>$($_.SiteLinksCost)</td>"
+		$content += "<td>$($_.ReplicationInterval)</td>"
+		$content += "<td>$snx</td>"
+		$content += "</tr>"
+	}
+	$content += "<tr><td colspan=`"6`" class=`"lastrow`">$($sitelinks.Count) items found</td></tr>"
+	$content += "</table>"
 }
 catch {
 	$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
