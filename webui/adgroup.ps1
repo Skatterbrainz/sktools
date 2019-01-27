@@ -70,7 +70,7 @@ switch ($TabSelected) {
         break;
     }
 } # switch
-$tabset  = New-SkMenuTabSet2 -MenuTabs $tabs -BaseLink $pagelink
+$tabset  = Write-SkMenuTabSetNameList -MenuTabs $tabs -BaseLink $pagelink
 $content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 
 Write-SkWebContent

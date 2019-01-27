@@ -242,12 +242,15 @@ switch ($Script:TabSelected) {
         break;
     }
     'Tools' {
-        $content = "<table id=table2><tr><td><ul>"
+		$content = Write-SkRemoteTools -ComputerName $SearchValue -CallSource 'ad'
+        <#
+		$content = "<table id=table2><tr><td><ul>"
         $content += "<li><a href=`"adtool.ps1?t=gpupdate&c=$SearchValue`">Invoke Group Policy Update (GPUPDATE)</a></li>"
         $content += "<li><a href=`"adtool.ps1?t=ccmrepair&c=$SearchValue`">CCM Client Repair (CCMRepair)</a></li>"
         $content += "<li><a href=`"adtool.ps1?t=restart&c=$SearchValue`">Restart Computer (Restart)</a></li>"
         $content += "</ul></td></tr></table>"
-        break;
+        #>
+		break;
     }
 } # switch
 

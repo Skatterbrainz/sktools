@@ -6,7 +6,7 @@
 # PoSH Server Configuration
 
 # Default Document
-$DefaultDocument = "index.htm"
+$DefaultDocument = "default.ps1"
 
 # Log Schedule
 # Options: Hourly, Daily
@@ -47,7 +47,7 @@ if (!(Get-Module dbatools)) {
     Import-Module dbatools 
 }
 
-$Global:SkToolsVersion = "1901.20.5"
+$Global:SkToolsVersion = "1901.26.4"
 
 function Import-SkConfig {
 	[CmdletBinding()]
@@ -79,6 +79,10 @@ function Import-SkConfig {
 #---------------------------------------------------------------------
 # DATABASE FUNCTIONS
 
+<#
+.DESCRIPTION 
+	Single row dataset HTML table thing using pivot column structure
+#>
 function Get-SkQueryTableSingle {
     [CmdletBinding()]
     param (
@@ -114,29 +118,23 @@ function Get-SkQueryTableSingle {
         else {
             $result = @(Invoke-DbaQuery -SqlInstance $SkCmDbHost -Database "CM_$SkCmSiteCode" -Query $Query -ErrorAction Stop)
         }
-        #Write-Verbose "$($result.Count) rows returned"
         if (![string]::IsNullOrEmpty($Columns)) {
-            $result   = $result | Select-Object $Columns
+            $result   = @($result | Select-Object $Columns)
             $colcount = $Columns.Count
         }
         else {
-            $columns  = $result[0].Table.Columns.ColumnName | Where-Object {$_.ColumnName -notin ('RowError','RowState','Table','ItemArray','HasErrors')} 
+            $columns  = @($result[0].Table.Columns.ColumnName | Where-Object {$_.ColumnName -notin ('RowError','RowState','Table','ItemArray','HasErrors')} )
             $colcount = $columns.Count
             $result   = $result | Select-Object $Columns
         }
-        #Write-Verbose "$colcount columns"
         if ([string]::IsNullOrEmpty($Script:SearchField) -and ![string]::IsNullOrEmpty($Script:SearchValue)) {
             $SearchField = $($result[0].Table.Columns.ColumnName)[0]
-            #Write-Verbose "Searchfield remapped to $SearchField"
-            $result = $result | Where-Object {$_."$SearchField" -eq "$SearchValue"}
+            $result = @($result | Where-Object {$_."$SearchField" -eq "$SearchValue"})
         }
         else {
-            #Write-Verbose "filtering on $SearchField is $SearchValue"
-            $result = $result | Where-Object {$_."$SearchField" -eq "$SearchValue"}
+            $result = @($result | Where-Object {$_."$SearchField" -eq "$SearchValue"})
         }
-        #Write-Verbose "$($result.Count) rows in result"
         $output = "<table id=table2>"
-        #Write-Verbose "entering foreach"
         foreach ($rs in $result.psobject.Properties) {
 			$fn = $rs.Name
 			if ($fn -in $columns) {
@@ -159,6 +157,101 @@ function Get-SkQueryTableSingle {
     }
 }
 
+function Get-SkQueryTableSingle2 {
+    [CmdletBinding()]
+    param (
+        [parameter(Mandatory=$False)]
+			[ValidateNotNullOrEmpty()]
+			[string] $QueryFile = "",
+        [parameter(Mandatory=$False)]
+            [string] $Query = "",
+        [parameter(Mandatory=$True)]
+			[ValidateNotNullOrEmpty()]
+			[string] $PageLink,
+        [parameter(Mandatory=$True)]
+            [ValidateNotNullOrEmpty()]
+            [string] $FieldName,
+        [parameter(Mandatory=$True)]
+            [ValidateNotNullOrEmpty()]
+            $Value,
+        [parameter(Mandatory=$False)]
+			[string[]] $Columns = "",
+		[switch] $Diagnostics
+    )
+    $output = $null
+	$laststep = @()
+    if ($QueryFile -eq "" -and $Query -eq "") {
+        $laststep += "no inputs provided"
+		throw $laststep
+    }
+    try {
+        if ($Query -eq "") {
+            $laststep += "query not provided, looking for file: $QueryFile"
+            if (Test-Path $QueryFile) {
+                $qfile = $QueryFile
+                $laststep += "qfile found: $qfile"
+            }
+            else {
+				$laststep += "getting module path: $PSScriptRoot"
+                $qpath    = $(Join-Path -Path $PSScriptRoot -ChildPath "queries")
+                $qfile    = $(Join-Path -Path $qpath -ChildPath "$QueryFile")
+				if (!(Test-Path $qfile)) {
+					throw "unable to find qfile: $qfile"
+				}
+                $laststep += "qfile located: $qfile"
+            }
+            $result = @(Invoke-DbaQuery -SqlInstance $SkCmDbHost -Database "CM_$SkCmSiteCode" -File $qfile -ErrorAction Stop)
+        }
+        else {
+            $laststep += "query: $query"
+            $result = @(Invoke-DbaQuery -SqlInstance $SkCmDbHost -Database "CM_$SkCmSiteCode" -Query $Query -ErrorAction Stop)
+        }
+        $laststep += "raw dataset rows: $($result.count)"
+        if (![string]::IsNullOrEmpty($Columns)) {
+            $laststep += "explicit columns provided"
+            $result   = $result | Select-Object $Columns
+            $colcount = $Columns.Count
+        }
+        else {
+            $laststep += "deriving columns from dataset"
+            $columns  = @($result[0].Table.Columns.ColumnName | Where-Object {$_.ColumnName -notin ('RowError','RowState','Table','ItemArray','HasErrors')} )
+            $laststep += $($columns -join ',')
+            $colcount = $columns.Count
+            $result   = $result | Select-Object $Columns
+        }
+        $laststep += "applying filters to shape dataset"
+		$laststep += "fieldname: $fieldname = $value"
+        $result = @($result | Where-Object {$_."$FieldName" -eq "$Value"})
+        $laststep += "shaped dataset rows: $($result.Count)"
+        $output = "<table id=table2>"
+        foreach ($rs in $result) {
+            $output += "<tr>"
+            $columns | %{ 
+				$fn  = $_
+				$laststep += "-- column: $fn"
+				$fv  = $($rs."$_").ToString().Trim()
+				$fvx = Get-SKDbValueLink -ColumnName $fn -Value $fv
+				$output += "<tr><td class=`"t2td1`">$fn</td><td class=`"t2td2`">$fvx</td></tr>"
+            }
+            $output += "</tr>"
+        }
+        $output += "</table>"
+		$laststep += "finished building table"
+    }
+    catch {
+        $output = "<table id=table2><tr><td>Exception Occurred<br/>qpath: $qfile<br/>Query: $query"
+        $output += "<br/>Steps:<br/>$($laststep -join '<br/>')<br/>Error: $($Error[0].Exception.Message)</td></tr></table>"
+    }
+    finally {
+		if ($Diagnostics) { $output += "<table id=table2><tr><td>Steps:<br/>$($laststep -join '<br/>')</td></tr></table>" }
+        Write-Output $output
+    }
+}
+
+<#
+.Description
+	Multi-row dataset HTML table woodchipper thing
+#>
 function Get-SkQueryTableMultiple {
     param (
         [parameter(Mandatory=$False)]
@@ -215,7 +308,7 @@ function Get-SkQueryTableMultiple {
         }
         if (![string]::IsNullOrEmpty($Script:SearchField)) {
             switch ($Script:SearchType) {
-                'like' {
+                {($_ -eq 'like') -or ($_ -eq 'contains')} {
                     $result = $result | Where-Object {$_."$Script:SearchField" -like "*$Script:SearchValue*"}
                     break;
                 }
@@ -227,6 +320,14 @@ function Get-SkQueryTableMultiple {
                     $result = $result | Where-Object {$_."$Script:SearchField" -like "*$Script:SearchValue"}
                     break;
                 }
+				'notlike' {
+                    $result = $result | Where-Object {$_."$Script:SearchField" -notlike "*$Script:SearchValue*"}
+                    break;
+				}
+				'notequal' {
+                    $result = $result | Where-Object {$_."$Script:SearchField" -ne "$Script:SearchValue"}
+                    break;
+				}
                 default {
                     $result = $result | Where-Object {$_."$Script:SearchField" -eq $Script:SearchValue}
                 }
@@ -290,13 +391,13 @@ function Get-SkQueryTableMultiple {
         $output += "</td></tr></table>"
     }
     catch {
-        $output = "<table id=table2><tr><td>No matching items found"
-        $output += "<br/>queryfile: $qfile"
-        $output += "<br/>SearchField: $Script:SearchField"
-        $output += "<br/>SearchValue: $Script:SearchValue"
-        $output += "<br/>SearchType: $Script:SearchType"
-        $output += "<br/>SortField: $Script:SortField"
-        $output += "</td></tr></table>"
+        $output = "<table id=table2><tr><td>No matching items found
+        <br/>queryfile: $qfile
+        <br/>SearchField: $Script:SearchField
+        <br/>SearchValue: $Script:SearchValue
+        <br/>SearchType: $Script:SearchType
+        <br/>SortField: $Script:SortField
+        </td></tr></table>"
     }
     finally {
         Write-Output $output
@@ -351,6 +452,10 @@ function Get-SKDbValueLink {
                 $output = "<a href=`"cmdevices.ps1?f=OSBuild&v=$Value&x=equals`" title=`"Computers running $Value`">$Value</a>"
                 break;
             }
+			'OSType' {
+				$output = "<a href=`"cmdevices.ps1?f=OSType&v=$Value&x=equals`" title=`"Filter on $Value`">$Value</a>"
+				break;
+			}
             {($_ -eq 'ADSiteName') -or ($_ -eq 'ADSite')} {
                 $output = "<a href=`"cmdevices.ps1?f=$ColumnName&v=$Value&x=equals&n=$Value`" title=`"Filter on $Value`">$Value</a>"
                 break;
@@ -367,10 +472,6 @@ function Get-SKDbValueLink {
 				$output = "<a href=`"cmadvertisement.ps1?f=AdvertisementID&v=$Value&tabl=general`" title=`"Advertisement Details`">$Value</a>"
 				break;
 			}
-            #'CollectionName' {
-            #    $output = "<a href=`"cmcollection.ps1?f=collectionname&v=$Value&t=$Misc&n=$Value`" title=`"Details`">$Value</a>"
-            #    break;
-            #}
             'LimitedTo' {
                 $output = "<a href=`"cmcollection.ps1?f=$ColumnName&v=$Value&t=$CollectionType&tab=general`" title=`"Details`">$Value</a>"
                 break;
@@ -474,7 +575,7 @@ function Get-SKDbValueLink {
             }
             'Author' {
                 ($Value -split '\\') | ForEach-Object {$aun = $_}
-                $output = "<a href=`"cmscripts.ps1?f=author&v=$aun&x=contains`" title=`"Other scripts by $aun`">$Value</a>"
+                $output = "<a href=`"cmscripts.ps1?f=author&v=$aun&x=like`" title=`"Other scripts by $aun`">$Value</a>"
                 break;
             }
             'DaysOfWeek' {
@@ -529,7 +630,7 @@ function Get-SKDbCellTextAlign {
     $centerlist = ('LimitedTo','Members','Variables','Type','PackageID','LastContacted','MessageID','MessageType','Severity',
         'SiteCode','SiteSystem','TimeReported','Enabled','BeginTime','LatestBeginTime','BackupLocation','DeleteOlderThan',
         'PackageType','PkgType','SiteStatus','Status','State','Info','Warning','Error','InstallState')
-    $rightlist = ('DiskSize','FreeSpace','Used','PCT','Installs','Clients','QTY')
+    $rightlist = ('DiskSize','Size','FreeSpace','Used','PCT','Installs','Clients','QTY')
     if ($centerlist -contains $ColumnName) {
         $output = 'center'
     }
@@ -547,7 +648,7 @@ function Get-SKDbCellTextColor {
         [parameter(Mandatory=$False)]
         $Value
     )
-    $output = $Value
+    $output    = $Value
     $greenlist = ('Enabled')
     $redlist   = ('State=Stopped')
     $graylist  = ('Disabled')
@@ -570,9 +671,10 @@ function Get-SkAdUsers {
     [CmdletBinding()]
     param (
         [parameter(Mandatory=$False, HelpMessage="Optional user name")]
-        [string] $UserName = ""
+        [string] $UserName = "",
+		[parameter(Mandatory=$False)]
+		[int] $pageSize = 2000
     )
-    $pageSize = 1000
     if ([string]::IsNullOrEmpty($UserName)) {
         $as = [adsisearcher]"(objectCategory=User)"
     }
@@ -580,7 +682,7 @@ function Get-SkAdUsers {
         $as = [adsisearcher]"(&(objectCategory=User)(sAMAccountName=$UserName))"
     }
     [void]$as.PropertiesToLoad.Add('cn')
-    [void]$as.PropertiesToLoad.Add('sAMAccountName')
+    [void]$as.PropertiesToLoad.Add('samAccountName')
     [void]$as.PropertiesToLoad.Add('lastlogonTimeStamp')
     [void]$as.PropertiesToLoad.Add('whenCreated')
     [void]$as.PropertiesToLoad.Add('department')
@@ -624,9 +726,10 @@ function Get-SkAdComputers {
         [string] $ComputerName = "",
         [parameter(Mandatory=$False, HelpMessage="Search type")]
         [ValidateSet('All','Disabled','Workstations','Servers')]
-        [string] $SearchType = 'All'
+        [string] $SearchType = 'All',
+		[parameter(Mandatory=$False)]
+		[int] $pageSize = 2000
     )
-    $pageSize = 200
     if (![string]::IsNullOrEmpty($ComputerName)) {
         $as = [adsisearcher]"(&(objectCategory=Computer)(name=$ComputerName))"
     }
@@ -662,21 +765,35 @@ function Get-SkAdComputers {
     $results = $as.FindAll()
     foreach ($item in $results) {
         $cn = ($item.properties.item('cn') | Out-String).Trim()
+		$dn = ($item.Properties.item('distinguishedName') | Out-String).Trim()
         [datetime]$created = ($item.Properties.item('whenCreated') | Out-String).Trim()
         $llogon = ([datetime]::FromFiletime(($item.properties.item('lastlogonTimeStamp') | Out-String).Trim())) 
         $ouPath = ($item.Properties.item('distinguishedName') | Out-String).Trim() -replace $("CN=$cn,", "")
+		$osname = ($item.Properties.item('operatingSystem') | Out-String).Trim()
+		if ($osname -match 'Server') {
+			if ($dn -match 'Domain Controllers') {
+				$ostype = 'Domain Controller'
+			}
+			else {
+				$ostype = 'Server'
+			}
+		}
+		else {
+			$ostype = 'Workstation'
+		}
         $props  = [ordered]@{
             Name       = $cn
             DnsName    = ($item.Properties.item('dnsHostName') | Out-String).Trim()
-            OS         = ($item.Properties.item('operatingSystem') | Out-String).Trim()
+            OS         = $osname
             OSVer      = ($item.Properties.item('operatingSystemVersion') | Out-String).Trim()
-            DN         = ($item.Properties.item('distinguishedName') | Out-String).Trim()
+			OSType     = $ostype
+            DN         = $dn
             OU         = $ouPath
             SPNlist    = ($item.Properties.item('servicePrincipalName'))
             Created    = $created
             LastLogon  = $llogon
         }
-        New-Object psObject -Property $props
+        New-Object PSObject -Property $props
     }
 }
 
@@ -684,9 +801,10 @@ function Get-SkAdGroups {
     [CmdletBinding()]
     param (
         [parameter(Mandatory=$False)]
-        [string] $GroupName = ""
+        [string] $GroupName = "",
+		[parameter(Mandatory=$False)]
+		[int] $pageSize = 2000
     )
-    $pageSize = 200
     if ([string]::IsNullOrEmpty($GroupName)) {
         $as = [adsisearcher]"(objectCategory=Group)"
     }
@@ -714,7 +832,7 @@ function Get-SkAdGroups {
             Created     = $created
             Changed     = $changed
         }
-        New-Object psObject -Property $props
+        New-Object PSObject -Property $props
     }
 }
 
@@ -733,10 +851,10 @@ function Get-SkAdGroupMembers {
         $gx.member | Foreach-Object {
             $searcher = [adsisearcher]"(distinguishedname=$_)"
             $user = $searcher.FindOne().Properties
-            $uname   = $($user.samaccountname | out-string).Trim()
-            $created = [datetime]$($user.whencreated | Out-string).Trim() -f 'mm/DD/yyyy hh:mm'
-            $udn     = $($user.distinguishedname | Out-string).Trim()
-            if (($user.objectclass -join ',').Trim() -like "*group*") {
+            $uname   = $($user.samAccountName | out-string).Trim()
+            $created = [datetime]$($user.whenCreated | Out-string).Trim() -f 'mm/DD/yyyy hh:mm'
+            $udn     = $($user.distinguishedName | Out-string).Trim()
+            if (($user.objectClass -join ',').Trim() -like "*group*") {
                 $utype = 'Group'
             }
             else {
@@ -769,11 +887,11 @@ function Get-SkAdUserGroups {
         $user = Get-SkAdUsers | Where-Object {$_.UserName -eq "$UserName"}
         $groups = $user.Groups
         $groups | ForEach-Object {
-            $Searcher = [adsisearcher]"(distinguishedname=$_)"
+            $Searcher = [adsisearcher]"(distinguishedName=$_)"
             $group  = $searcher.FindOne().Properties
             $gprops = [ordered]@{
                 Name = [string]$group.name
-                DN   = [string]$group.distinguishedname
+                DN   = [string]$group.distinguishedName
             }
             New-Object PSObject -Property $gprops
         }
@@ -791,6 +909,7 @@ function Get-SkAdUserPwdExpirations {
         $as = [adsisearcher]"(objectCategory=User)"
         [void]$as.PropertiesToLoad.Add('cn')
         [void]$as.PropertiesToLoad.Add('sAMAccountName')
+		[void]$as.PropertiesToLoad.Add('distinguishedName')
         [void]$as.PropertiesToLoad.Add('lastlogonTimeStamp')
         [void]$as.PropertiesToLoad.Add('pwdLastSet')
         $as.PageSize = 1000
@@ -798,7 +917,8 @@ function Get-SkAdUserPwdExpirations {
         foreach ($item in $results) {
             $pwdset = ([datetime]::FromFiletime(($item.properties.item('pwdLastSet') | Out-String).Trim()))
             $pwdage = (New-TimeSpan -Start $pwdset -End (Get-Date)).Days
-            $uname = $($item.properties.item('samaccountname') | Out-String).Trim()
+            $uname  = $($item.properties.item('samAccountName') | Out-String).Trim()
+			$dn     = $($item.properties.item('distinguishedName') | Out-String).Trim()
             if ($uname -in $noexp) {
                 $exp = 'Never'
             }
@@ -807,6 +927,7 @@ function Get-SkAdUserPwdExpirations {
             }
             $props = [ordered]@{
                 UserName   = $uname
+				DN         = $dn
                 LastPwdSet = $pwdset
                 PwdAge     = $pwdage
                 MaxPwAge   = $mpwa
@@ -824,14 +945,14 @@ function Get-SkAdUserPwdNoExpiration {
     $root = [ADSI]""
     $search = [adsisearcher]$root
     [void]$search.PropertiesToLoad.Add('sAMAccountName')
-    [void]$search.PropertiesToLoad.Add('distinguishedname')
+    [void]$search.PropertiesToLoad.Add('distinguishedName')
     [void]$search.PropertiesToLoad.Add('name')
     $search.Filter = "(&(objectclass=user)(objectcategory=user)(useraccountcontrol:1.2.840.113556.1.4.803:=65536))"
     $search.SizeLimit = 3000
     $results = $search.FindAll()
     foreach ($result in $results){
         $result.Properties |
-        Select @{N="Name"; E={$_.name}},@{N="UserName"; E={$_.samaccountname}},@{N="DistinguishedName"; E={$_.distinguishedname}}
+			select @{N="Name"; E={$_.name}},@{N="UserName"; E={$_.samaccountname}},@{N="DistinguishedName"; E={$_.distinguishedName}}
     }
 }
 
@@ -866,10 +987,10 @@ function Get-SkAdOuTree {
     )
     try {
         $info = ([adsisearcher]"objectclass=organizationalunit")
-        $info.PropertiesToLoad.AddRange("CanonicalName")
+        [void]$info.PropertiesToLoad.AddRange("CanonicalName")
         $output = $info.findall().properties.canonicalname
         if (![string]::IsNullOrEmpty($Path)) {
-            $output = $output | ?{$_ -like "$Path*"}
+            $output = $output | Where-Object {$_ -like "$Path*"}
             if ($output.count -gt 1) {
                 $output = $output[1..($output.length-1)]
             }
@@ -897,21 +1018,23 @@ function Get-SkAdOuObjects {
         [ValidateNotNullOrEmpty()]
         [string] $ou,
         [parameter(Mandatory=$False)]
-        [string] $ObjectType = ""
+        [string] $ObjectType = "",
+		[parameter(Mandatory=$False)]
+		[int] $pageSize = 3000
     )
-    $root = [ADSI]"LDAP://$ou"
+    $root   = [ADSI]"LDAP://$ou"
     $search = [adsisearcher]$root
     if ($ObjectType -ne "") {
         $search.Filter = "(&(objectclass=$ObjectType)(objectcategory=$ObjectType))"
     }
-    $search.SizeLimit = 3000
+    $search.SizeLimit = $pageSize
     $results = $search.FindAll()
     foreach ($result in $results) {
         $props = $result.Properties
         foreach ($p in $props) {
             $itemName = ($p.name | Out-String).Trim()
-            $objName  = ($p.samaccountname | Out-String).Trim()
-            $itemPath = ($p.distinguishedname | Out-String).Trim()
+            $objName  = ($p.samAccountName | Out-String).Trim()
+            $itemPath = ($p.distinguishedName | Out-String).Trim()
             $itemPth  = $itemPath -replace "CN=$itemName,", ''
             $itemType = (($p.objectcategory -split ',')[0]) -replace 'CN=', ''
             $output = [ordered]@{
@@ -932,43 +1055,35 @@ function Get-SkADSiteLinks {
     [CmdletBinding()]
     param()
     $Forest = [System.DirectoryServices.ActiveDirectory.Forest]::GetCurrentForest()
-    Write-Verbose -message "[$ScriptName][PROCESS] Retrieve current Forest sites"
+    #Write-Verbose -message "[$ScriptName][PROCESS] Retrieve current Forest sites"
     $SiteInfo = [System.DirectoryServices.ActiveDirectory.Forest]::GetCurrentForest().Sites
-
-    # Forest Context
-    Write-Verbose -message "[$ScriptName][PROCESS] Create forest context"
-    $ForestType = [System.DirectoryServices.ActiveDirectory.DirectoryContexttype]"forest"
-    $ForestContext = New-Object -TypeName System.DirectoryServices.ActiveDirectory.DirectoryContext -ArgumentList $ForestType,$Forest
-
-    $Configuration = ([ADSI]"LDAP://RootDSE").configurationNamingContext
+    #Write-Verbose -message "[$ScriptName][PROCESS] Create forest context"
+    $ForestType       = [System.DirectoryServices.ActiveDirectory.DirectoryContexttype]"forest"
+    $ForestContext    = New-Object -TypeName System.DirectoryServices.ActiveDirectory.DirectoryContext -ArgumentList $ForestType,$Forest
+    $Configuration    = ([ADSI]"LDAP://RootDSE").configurationNamingContext
     $SubnetsContainer = [ADSI]"LDAP://CN=Subnets,CN=Sites,$Configuration"
     foreach ($item in $SiteInfo) {
         $LinksInfo = ([System.DirectoryServices.ActiveDirectory.ActiveDirectorySite]::FindByName($ForestContext,$($item.name))).SiteLinks
         New-Object -TypeName PSObject -Property @{
-	        Name= $item.Name
+	        Name      = $item.Name
             SiteLinks = $item.SiteLinks -join ","
-	        Servers = $item.Servers -join ","
-	        Domains = $item.Domains -join ","
-	        Options = $item.options
+	        Servers   = $item.Servers -join ","
+	        Domains   = $item.Domains -join ","
+	        Options   = $item.options
 	        AdjacentSites = $item.AdjacentSites -join ','
 	        InterSiteTopologyGenerator = $item.InterSiteTopologyGenerator
 	        Location = $item.location
             Subnets = ( $info = Foreach ($i in $item.Subnets.name){
                 $SubnetAdditionalInfo = $SubnetsContainer.Children | Where-Object {$_.name -like "*$i*"}
                 "$i -- $($SubnetAdditionalInfo.Description)" }) -join ","
-	        #SiteLinksInfo = $LinksInfo | fl *
-	                
-	        #SiteLinksInfo = New-Object -TypeName PSObject -Property @{
-	            SiteLinksCost = $LinksInfo.Cost -join ","
-	            ReplicationInterval = $LinksInfo.ReplicationInterval -join ','
-	            ReciprocalReplicationEnabled = $LinksInfo.ReciprocalReplicationEnabled -join ','
-	            NotificationEnabled = $LinksInfo.NotificationEnabled -join ','
-	            TransportType = $LinksInfo.TransportType -join ','
-	            InterSiteReplicationSchedule = $LinksInfo.InterSiteReplicationSchedule -join ','
-	            DataCompressionEnabled = $LinksInfo.DataCompressionEnabled -join ',' 
-	        #}
-	        #>
-	    }#New-Object -TypeName PSoBject
+			SiteLinksCost = $LinksInfo.Cost -join ","
+			ReplicationInterval = $LinksInfo.ReplicationInterval -join ','
+			ReciprocalReplicationEnabled = $LinksInfo.ReciprocalReplicationEnabled -join ','
+			NotificationEnabled = $LinksInfo.NotificationEnabled -join ','
+			TransportType = $LinksInfo.TransportType -join ','
+			InterSiteReplicationSchedule = $LinksInfo.InterSiteReplicationSchedule -join ','
+			DataCompressionEnabled = $LinksInfo.DataCompressionEnabled -join ',' 
+	    }
     }
 }
 
@@ -1019,6 +1134,10 @@ function Get-SkValueLinkAD {
                 $output = "$Value - $(Get-SkOsBuildName -BuildData $Value)"
                 break;
             }
+			'OSType' {
+				$output = "<a href=`"adcomputers.ps1?f=OSType&v=$Value&x=equals`" title=`"Filter on $Value`">$Value</a>"
+				break;
+			}
             default {
                 $output = $Value
                 break;
@@ -1035,10 +1154,16 @@ function Get-SkAdObjectTableMultiple {
             [string] $ObjectType,
         [parameter(Mandatory=$False)]
             [string[]] $Columns,
+		[parameter(Mandatory=$False)]
+			[string] $FieldName = "",
+		[parameter(Mandatory=$False)]
+			[string] $Value = "",
         [parameter(Mandatory=$False)]
             [string] $SortColumn = "",
         [parameter(Mandatory=$False)]
-            [switch] $NoSortHeadings
+            [switch] $NoSortHeadings,
+		[parameter(Mandatory=$False)]
+			[switch] $Diagnostics
     )
     $output = ""
     switch ($ObjectType) {
@@ -1049,26 +1174,36 @@ function Get-SkAdObjectTableMultiple {
             else {
                 $computers = Get-SkAdComputers
             }
-            if (![string]::IsNullOrEmpty($Script:SearchValue)) {
+            if (![string]::IsNullOrEmpty($Value)) {
                 $IsFiltered = $True
                 switch ($SearchType) {
                     {($_ -eq 'contains') -or ($_ -eq 'like')} {
-                        $computers = $computers | Where-Object {$_."$Script:SearchField" -like "*$Script:SearchValue*"}
+                        $computers = $computers | Where-Object {$_."$FieldName" -like "*$Value*"}
                         $cap = 'contains'
                         break;
                     }
                     'begins' {
-                        $computers = $computers | Where-Object {$_."$Script:SearchField" -like "$Script:SearchValue*"}
+                        $computers = $computers | Where-Object {$_."$FieldName" -like "$Value*"}
                         $cap = 'begins with'
                         break;
                     }
                     'ends' {
-                        $computers = $computers | Where-Object {$_."$Script:SearchField" -like "*$Script:SearchValue"}
+                        $computers = $computers | Where-Object {$_."$FieldName" -like "*$Value"}
                         $cap = 'ends with'
                         break;
                     }
+					'notlike' {
+                        $computers = $computers | Where-Object {$_."$FieldName" -notlike "*$Value*"}
+                        $cap = 'not like'
+                        break;
+					}
+					'notequal' {
+                        $computers = $computers | Where-Object {$_."$FieldName" -ne "$Value"}
+                        $cap = 'not equal'
+                        break;
+					}
                     default {
-                        $computers = $computers | Where-Object {$_."$Script:SearchField" -eq $Script:SearchValue}
+                        $computers = $computers | Where-Object {$_."$FieldName" -eq $Value}
                         $cap = '='
                         break;
                     }
@@ -1102,12 +1237,14 @@ function Get-SkAdObjectTableMultiple {
                 $output += '</tr>'
                 $rowcount++
             } # foreach
-            $output += '<tr>'
-            $output += "<td colspan=`"$colCount`" class=`"lastrow`">$rowcount computers found"
+			if ($rowcount -eq 0) {
+				$output += "<tr><td colspan=`"$colcount`">No matching items found</td></tr>"
+			}
+            $output += "<tr><td colspan=`"$colCount`" class=`"lastrow`">$rowcount computers found"
             if ($IsFiltered -eq $True) {
                 $output += " - <a href=`"$pagelink`" title=`"Show All`">Show All</a>"
             }
-            $output += '</td></tr></table>'    
+            $output += "</td></tr></table>"
             break;
         }
         'user' {
@@ -1117,26 +1254,36 @@ function Get-SkAdObjectTableMultiple {
             else {
                 $users = Get-SkAdUsers | Select Name,UserName,DisplayName,Title,Department,DN,OUPath,Created,LastLogon
             }
-            if (![string]::IsNullOrEmpty($Script:SearchValue)) {
+            if (![string]::IsNullOrEmpty($Value)) {
                 $IsFiltered = $True
                 switch ($SearchType) {
                     {($_ -eq 'contains') -or ($_ -eq 'like')} {
-                        $users = $users | Where-Object {$_."$Script:SearchField" -like "*$Script:SearchValue*"}
+                        $users = $users | Where-Object {$_."$FieldName" -like "*$Value*"}
+                        $cap = 'contains'
+                        break;
+                    }
+                    'notlike' {
+                        $users = $users | Where-Object {$_."$FieldName" -notlike "*$Value*"}
                         $cap = 'contains'
                         break;
                     }
                     'begins' {
-                        $users = $users | Where-Object {$_."$Script:SearchField" -like "$Script:SearchValue*"}
+                        $users = $users | Where-Object {$_."$FieldName" -like "$Value*"}
                         $cap = 'begins with'
                         break;
                     }
                     'ends' {
-                        $users = $users | Where-Object {$_."$Script:SearchField" -like "*$Script:SearchValue"}
+                        $users = $users | Where-Object {$_."$FieldName" -like "*$Value"}
                         $cap = 'ends with'
                         break;
                     }
+                    'notequal' {
+                        $users = $users | Where-Object {$_."$FieldName" -ne $Value}
+                        $cap = '='
+                        break;
+                    }
                     default {
-                        $users = $users | Where-Object {$_."$Script:SearchField" -eq $Script:SearchValue}
+                        $users = $users | Where-Object {$_."$FieldName" -eq $Value}
                         $cap = '='
                         break;
                     }
@@ -1170,8 +1317,10 @@ function Get-SkAdObjectTableMultiple {
                 $output += '</tr>'
                 $rowcount++
             } # foreach
-            $output += '<tr>'
-            $output += '<td colspan='+$($columns.Count)+' class=lastrow>'+$rowcount+' users found'
+			if ($rowcount -eq 0) {
+				$output += "<tr><td colspan=`"$($columns.count)`">No matching items found</td></tr>"
+			}
+            $output += "<tr><td colspan=`"$($columns.Count)`"' class=`"lastrow`">$rowcount users found"
             if ($IsFiltered -eq $True) {
                 $output += " - <a href=`"$pagelink`" title=`"Show All`">Show All</a>"
             }
@@ -1185,26 +1334,36 @@ function Get-SkAdObjectTableMultiple {
             else {
                 $groups = Get-SkAdGroups | Select Name,Description
             }
-            if (![string]::IsNullOrEmpty($Script:SearchValue)) {
+            if (![string]::IsNullOrEmpty($Value)) {
                 $IsFiltered = $True
                 switch ($SearchType) {
                     {($_ -eq 'contains') -or ($_ -eq 'like')} {
-                        $groups = $groups | Where-Object {$_."$Script:SearchField" -like "*$Script:SearchValue*"}
+                        $groups = $groups | Where-Object {$_."$FieldName" -like "*$Value*"}
+                        $cap = 'contains'
+                        break;
+                    }
+                    'notlike' {
+                        $groups = $groups | Where-Object {$_."$FieldName" -notlike "*$Value*"}
                         $cap = 'contains'
                         break;
                     }
                     'begins' {
-                        $groups = $groups | Where-Object {$_."$Script:SearchField" -like "$Script:SearchValue*"}
+                        $groups = $groups | Where-Object {$_."$FieldName" -like "$Value*"}
                         $cap = 'begins with'
                         break;
                     }
                     'ends' {
-                        $groups = $groups | Where-Object {$_."$Script:SearchField" -like "*$Script:SearchValue"}
+                        $groups = $groups | Where-Object {$_."$FieldName" -like "*$Value"}
+                        $cap = 'ends with'
+                        break;
+                    }
+                    'notequal' {
+                        $groups = $groups | Where-Object {$_."$FieldName" -ne "$Value"}
                         $cap = 'ends with'
                         break;
                     }
                     default {
-                        $groups = $groups | Where-Object {$_."$Script:SearchField" -eq $Script:SearchValue}
+                        $groups = $groups | Where-Object {$_."$FieldName" -eq $Value}
                         $cap = '='
                         break;
                     }
@@ -1219,7 +1378,7 @@ function Get-SkAdObjectTableMultiple {
             }
             $output = '<table id=table1><tr>'
             if (!$NoSortHeadings) {
-                $output += New-SkTableColumnSortRow -ColumnNames $columns -BaseLink "$pagelink`?f=$($Script:SearchField)&v=$($Script:SearchValue)&x=$($Script:SortType)"
+                $output += New-SkTableColumnSortRow -ColumnNames $columns -BaseLink "$pagelink`?f=$$FieldName`&v=$Value`&x=$($Script:SortType)"
             }
             else {
                 $output += $columns | ForEach-Object {"<th>$_</th>"}
@@ -1238,16 +1397,81 @@ function Get-SkAdObjectTableMultiple {
                 $output += '</tr>'
                 $rowcount++
             } # foreach
-            $output += '<tr>'
-            $output += '<td colspan='+$($columns.Count)+' class=lastrow>'+$rowcount+' groups found'
+			if ($rowcount -eq 0) {
+				$output += "<tr><td colspan=`"$($columns.count)`">No matching items found</td></tr>"
+			}
+            $output += "<tr><td colspan=`"$($columns.Count)`" class=`"lastrow`">$rowcount groups found"
             if ($IsFiltered -eq $True) {
                 $output += " - <a href=`"$pagelink`" title=`"Show All`">Show All</a>"
             }
-            $output += '</td></tr></table>'    
+            $output += "</td></tr></table>"
             break;
         }
     }
+	if ($Diagnostics) {
+		$output += "<table id=table2><tr><td>fieldname: $FieldName<br/>value: $Value<br/>searchtype: $SearchType</td></tr></table>"
+	}
     Write-Output $output
+}
+
+function Get-SkAdForestSchemaVersion {
+	param ()
+	Write-Output $(
+		#https://blogs.msmvps.com/richardsiddaway/2016/12/14/active-directory-schema-versions/
+		$sch = [System.DirectoryServices.ActiveDirectory.ActiveDirectorySchema]::GetCurrentSchema()
+		$de = $sch.GetDirectoryEntry()
+		switch ($de.ObjectVersion) {
+			13 {"{0,25} " -f "Schema Version $($de.ObjectVersion) = Windows 2000"; break}
+			30 {"{0,25} " -f "Schema Version $($de.ObjectVersion) = Windows 2003"; break}
+			31 {"{0,25} " -f "Schema Version $($de.ObjectVersion) = Windows 2003 R2"; break}
+			44 {"{0,25} " -f "Schema Version $($de.ObjectVersion) = Windows 2008"; break}
+			47 {"{0,25} " -f "Schema Version $($de.ObjectVersion) = Windows 2008 R2"; break}
+			56 {"{0,25} " -f "Schema Version $($de.ObjectVersion) = Windows 2012"; break}
+			69 {"{0,25} " -f "Schema Version $($de.ObjectVersion) = Windows 2012 R2"; break}
+			87 {"{0,25} " -f "Schema Version $($de.ObjectVersion) = Windows 2016"; break}
+			default {"{0,25} {1,2} " -f "Unknown Schema Version", $($de.ObjectVersion); break}
+		}
+	)
+}
+
+function Get-SkAdDomainLevel {
+	param (
+		[parameter(Mandatory=$True)]
+		[ValidateRange(0,8)]
+		[int] $Level
+	)
+	switch ($Level) {
+		0 { $output = 'Windows Server 2000 mixed'; break; }
+		1 { $output = 'Windows Server 2003 Interim'; break; }
+		2 { $output = 'Windows Server 2003'; break; }
+		3 { $output = 'Windows Server 2008'; break; }
+		4 { $output = 'Windows Server 2008 R2'; break; }
+		5 { $output = 'Windows Server 2012'; break; }
+		6 { $output = 'Windows Server 2012 R2'; break; }
+		7 { $output = 'Windows Server 2016'; break; }
+		default { $output = 'Windows Server 2000'; break; }
+	}
+	Write-Output $output
+}
+
+function Get-SkAdForestLevel {
+	param (
+		[parameter(Mandatory=$True)]
+		[ValidateRange(0,8)]
+		[int] $Level
+	)
+	switch ($Level) {
+		0 { $output = 'Windows Server 2000'; break; }
+		1 { $output = 'Windows Server 2003 Interim'; break; }
+		2 { $output = 'Windows Server 2003'; break; }
+		3 { $output = 'Windows Server 2008'; break; }
+		4 { $output = 'Windows Server 2008 R2'; break; }
+		5 { $output = 'Windows Server 2012'; break; }
+		6 { $output = 'Windows Server 2012 R2'; break; }
+		7 { $output = 'Windows Server 2016'; break; }
+		default { $output = 'Windows Server 2000'; break; }
+	}
+	Write-Output $output
 }
 
 #---------------------------------------------------------------------
@@ -1346,12 +1570,13 @@ function Get-SkCmUserCollectionMemberships {
 function Get-SkCmCollectionMembers {
 	param (
 		[parameter(Mandatory=$True)]
-		[ValidateNotNullOrEmpty()]
-		[string] $CollectionID,
+			[ValidateNotNullOrEmpty()]
+			[string] $CollectionID,
 		[parameter(Mandatory=$True)]
-		[ValidateSet('device','user')]
-		[string] $CollectionType,
-		[switch] $Inverse
+			[ValidateSet('device','user')]
+			[string] $CollectionType,
+		[parameter(Mandatory=$False)]
+			[switch] $Inverse
 	)
 	$members = $null
 	try {
@@ -1376,16 +1601,17 @@ function Get-SkCmCollectionMembers {
 function Get-SkCmPackageTypeName {
     param (
         [parameter(Mandatory=$True)]
+		[ValidateRange(0,260)]
         [int] $PkgType
     )
     switch ($PkgType) {
-            0 { return 'Software Distribution Package'; break; }
-            3 { return 'Driver Package'; break; }
-            4 { return 'Task Sequence Package'; break; }
-            5 { return 'Software Update Package'; break; }
-            6 { return 'Device Settings Package'; break; }
-            7 { return 'Virtual Package'; break; }
-            8 { return 'Application'; break; }
+          0 { return 'Software Distribution Package'; break; }
+          3 { return 'Driver Package'; break; }
+          4 { return 'Task Sequence Package'; break; }
+          5 { return 'Software Update Package'; break; }
+          6 { return 'Device Settings Package'; break; }
+          7 { return 'Virtual Package'; break; }
+          8 { return 'Application'; break; }
         257 { return 'OS Image Package'; break; }
         258 { return 'Boot Image Package'; break; }
         259 { return 'OS Upgrade Package'; break; }
@@ -1393,6 +1619,7 @@ function Get-SkCmPackageTypeName {
     }
 }
 
+<#
 function Get-SkCmCollectionName {
     param (
         [parameter(Mandatory=$True)]
@@ -1408,25 +1635,51 @@ function Get-SkCmCollectionName {
         Write-Output $output
     }
 }
+#>
 
 function Get-SkCmObjectName {
     param (
         [parameter(Mandatory=$True)]
-        [ValidateNotNullOrEmpty()]
-        [string] $TableName,
+			[ValidateNotNullOrEmpty()]
+			[string] $TableName,
         [parameter(Mandatory=$True)]
-        [ValidateNotNullOrEmpty()]
-        [string] $SearchProperty,
+			[ValidateNotNullOrEmpty()]
+			[string] $SearchProperty,
         [parameter(Mandatory=$True)]
-        [ValidateNotNullOrEmpty()]
-        [string] $SearchValue,
+			[ValidateNotNullOrEmpty()]
+			[string] $SearchValue,
         [parameter(Mandatory=$True)]
-        [ValidateNotNullOrEmpty()]
-        [string] $ReturnProperty
+			[ValidateNotNullOrEmpty()]
+			[string] $ReturnProperty
     )
     $output = ""
     try {
         $output = (Invoke-DbaQuery -SqlInstance $Global:SkCmDbHost -Database "CM_$SkCmSiteCode" -Query "select $ReturnProperty from $TableName where $SearchProperty = '$SearchValue'") | Select -ExpandProperty $ReturnProperty
+    }
+    catch {}
+    finally {
+        Write-Output $output
+    }
+}
+
+function Get-SkCmRowCount {
+	param (
+		[parameter(Mandatory=$True)]
+			[ValidateNotNullOrEmpty()]
+			[string] $TableName,
+		[parameter(Mandatory=$True)]
+			[ValidateNotNullOrEmpty()]
+			[string] $ColumnName,
+		[parameter(Mandatory=$False)]
+			[string] $Criteria = ""
+	)
+	$output = ""
+	try {
+		$query = "select count(*) as Qty from $TableName"
+		if ($Criteria -ne "") {
+			$query += " where ($Criteria)"
+		}
+        $output = (Invoke-DbaQuery -SqlInstance $Global:SkCmDbHost -Database "CM_$SkCmSiteCode" -Query $query) | Select -ExpandProperty 'Qty'
     }
     catch {}
     finally {
@@ -1450,7 +1703,7 @@ function Get-SkParams {
     $Script:CollectionType = Get-SkPageParam -TagName 't' -Default ""
 }
 
-function New-SkMenuTabSet {
+function Write-SkMenuTabSetAlphaNumeric {
     param (
         [parameter(Mandatory=$True)]
 			[ValidateNotNullOrEmpty()]
@@ -1458,17 +1711,20 @@ function New-SkMenuTabSet {
         [parameter(Mandatory=$False)]
 			[string] $DefaultID = ""
     )
+	$btn1   = "<td class=`"dyn2`">_</td>"
+	$btn2   = "<td class=`"dyn1`" onMouseOver=`"this.className='dyn2'`" onMouseOut=`"this.className='dyn1'`" title=`"_`" onClick=`"document.location.href='NEWLINK'`">_</td>"
     $output = "<table id=table3><tr>"
     if ($DefaultID -eq 'all') {
-        $output += "<td class=`"dyn2`" title='All'>All</td>"
+        $output += "<td class=`"dyn2`">All</td>"
     }
     else {
-        $xlink = $($BaseLink -split '\?')[0]
-        $output += "<td class=`"dyn1`" onMouseOver=`"this.className='dyn2'`" onMouseOut=`"this.className='dyn1'`" title=`"Show All`" onClick=`"document.location.href='$xlink'`">All</td>"
+        $xlink = $($BaseLink -split '\?')[0] + "?v=&tab=all"
+        $output += $($btn2 -replace "_", "All") -replace 'NEWLINK', $xlink
     }
+	# print A-Z
     for ($i=65; $i -lt $(65+26); $i++) {
         $c = [char]$i
-        $xlink = $BaseLink + $c
+		$xlink = "$BaseLink$c`&tab=$c"
         if ($DefaultID -eq $c) {
             $output += "<td class=`"dyn2`">$c</td>"
         }
@@ -1476,8 +1732,9 @@ function New-SkMenuTabSet {
             $output += "<td class=`"dyn1`" onMouseOver=`"this.className='dyn2'`" onMouseOut=`"this.className='dyn1'`" title=`"Filter on $c`" onClick=`"document.location.href='$xlink'`">$c</td>"
         }
     }
+	# print 0-9
     for ($i=0; $i -lt 10; $i++) {
-        $xlink = $BaseLink + $i
+        $xlink = "$BaseLink$i&tab=$i"
         if ($DefaultID -eq $c) {
             $output += "<td class=`"dyn2`">$i</td>"
         }
@@ -1489,7 +1746,7 @@ function New-SkMenuTabSet {
     return $output
 }
 
-function New-SkMenuTabSet2 {
+function Write-SkMenuTabSetNameList {
     param (
         [parameter(Mandatory=$True)]
 			[ValidateNotNullOrEmpty()]
@@ -1614,10 +1871,10 @@ XCONTENT
 function Get-SkPageParam {
     param (
         [parameter(Mandatory=$True)]
-        [ValidateNotNullOrEmpty()]
-        [string] $TagName,
+			[ValidateNotNullOrEmpty()]
+			[string] $TagName,
         [parameter(Mandatory=$False)]
-        [string] $Default = ""
+			[string] $Default = ""
     )
     $output = $PoshQuery."$TagName"
     if ([string]::IsNullOrEmpty($output)) {
@@ -1629,10 +1886,10 @@ function Get-SkPageParam {
 function Get-SkFormParam {
     param (
         [parameter(Mandatory=$True)]
-        [ValidateNotNullOrEmpty()]
-        [string] $ElementID,
+			[ValidateNotNullOrEmpty()]
+			[string] $ElementID,
         [parameter(Mandatory=$False)]
-        [string] $Default = ""
+			[string] $Default = ""
     )
     $output = $PoshPost."$ElementID"
     if ([string]::IsNullOrEmpty($output)) {
@@ -1644,9 +1901,9 @@ function Get-SkFormParam {
 function Write-SkDetailView {
     param (
         [parameter(Mandatory=$False)]
-        [string] $PageRef = "", 
+			[string] $PageRef = "", 
         [parameter(Mandatory=$False)]
-        [string] $Mode = ""
+			[string] $Mode = ""
     )
 	if ($Global:SkDebug -ne "TRUE") {
 		$output = ""
@@ -1686,7 +1943,11 @@ function Write-SkDetailView {
 }
 
 function Get-SkUrlEncode {
-    param ($StringVal)
+    param (
+		[parameter(Mandatory=$True)]
+		[ValidateNotNullOrEmpty()]
+		[string] $StringVal
+	)
     $output = ""
     for ($i = 0; $i -lt $StringVal.Length; $i++) {
         $c = $([byte][char]$StringVal[$i] | Out-String).Trim()
@@ -1701,7 +1962,11 @@ function Get-SkUrlEncode {
 }
 
 function Get-SkUrlDecode {
-    param ($EncodedVal)
+    param (
+		[parameter(Mandatory=$True)]
+		[ValidateNotNullOrEmpty()]
+		[string] $EncodedVal
+	)
     $output = [string]::new("")
     $ccount = ($EncodedVal.Length - 2)
     for ($i = 0; $i -lt $ccount; $i+=3) {
@@ -1715,12 +1980,12 @@ function Get-SkUrlDecode {
 function Get-SkWmiValue {
     param (
         [parameter(Mandatory=$True)]
-        [ValidateNotNullOrEmpty()]
-        [string] $PropName,
+			[ValidateNotNullOrEmpty()]
+			[string] $PropName,
         [parameter(Mandatory=$False)]
-        $Value,
+			$Value,
 		[parameter(Mandatory=$False)]
-		[string] $WmiClass = ""
+			[string] $WmiClass = ""
     )
     $output = ""
     if (![string]::IsNullOrEmpty($Value)) {
@@ -1829,46 +2094,46 @@ function Get-SkWmiValue {
             }
             'OperatingSystemSKU' {
                 switch($Value) {
-                        0 { $output = 'Undefined'; break; }
-                        1 { $output = 'Ultimate'; break; }
-                        2 { $output = 'Basic'; break; }
-                        3 { $output = 'Home Premium'; break; }
-                        4 { $output = 'Enterprise'; break; }
-                        6 { $output = 'Business'; break; }
-                        7 { $output = 'Standard'; break; }
-                        8 { $output = 'DataCenter'; break; }
-                        9 { $output = 'Small Business'; break; }
-                        10 { $output = 'Enterprise'; break; }
-                        11 { $output = 'Starter'; break; }
-                        12 { $output = 'DataCenter Core'; break; }
-                        13 { $output = 'Standard Core'; break; }
-                        14 { $output = 'Enterprise Core'; break; }
-                        17 { $output = 'Web Server'; break; }
-                        19 { $output = 'Home Server'; break; }
-                        20 { $output = 'Storage Express'; break; }
-                        21 { $output = 'Storage Standard'; break; }
-                        22 { $output = 'Storage Workgroup'; break; }
-                        23 { $output = 'Storage Enterprise'; break; }
-                        24 { $output = 'Small Business'; break; }
-                        25 { $output = 'Small Business Server Premium Edition'; break; }
-                        27 { $output = 'Windows Enterprise Edition'; break; }
-                        28 { $output = 'Windows Ultimate Edition'; break; }
-                        29 { $output = 'Windows Server Web Server Edition (Server Core installation)'; break; }
-                        36 { $output = 'Windows Server Standard Edition without Hyper-V'; break; }
-                        37 { $output = 'Windows Server Datacenter Edition without Hyper-V (full installation)'; break; }
-                        38 { $output = 'Windows Server Enterprise Edition without Hyper-V (full installation)'; break; }
-                        39 { $output = 'Windows Server Datacenter Edition without Hyper-V (Server Core installation)'; break; }
-                        40 { $output = 'Windows Server Standard Edition without Hyper-V (Server Core installation)'; break; }
-                        41 { $output = 'Windows Server Enterprise Edition without Hyper-V (Server Core installation)'; break; }
-                        42 { $output = 'Microsoft Hyper-V Server'; break; }
-                        43 { $output = 'Storage Server Express Edition (Server Core installation)'; break; }
-                        44 { $output = 'Storage Server Standard Edition (Server Core installation)'; break; }
-                        45 { $output = 'Storage Server Workgroup Edition (Server Core installation)'; break; }
-                        46 { $output = 'Storage Server Enterprise Edition (Server Core installation)'; break; }
-                        50 { $output = 'Windows Server Essentials (Desktop Experience installation)'; break; }
-                        63 { $output = 'Small Business Server Premium (Server Core installation)'; break; }
-                        64 { $output = 'Windows Compute Cluster Server without Hyper-V'; break; }
-                        97 { $output = 'Windows RT'; break; }
+                      0 { $output = 'Undefined'; break; }
+                      1 { $output = 'Ultimate'; break; }
+                      2 { $output = 'Basic'; break; }
+                      3 { $output = 'Home Premium'; break; }
+                      4 { $output = 'Enterprise'; break; }
+                      6 { $output = 'Business'; break; }
+                      7 { $output = 'Standard'; break; }
+                      8 { $output = 'DataCenter'; break; }
+                      9 { $output = 'Small Business'; break; }
+                     10 { $output = 'Enterprise'; break; }
+                     11 { $output = 'Starter'; break; }
+                     12 { $output = 'DataCenter Core'; break; }
+                     13 { $output = 'Standard Core'; break; }
+                     14 { $output = 'Enterprise Core'; break; }
+                     17 { $output = 'Web Server'; break; }
+                     19 { $output = 'Home Server'; break; }
+                     20 { $output = 'Storage Express'; break; }
+                     21 { $output = 'Storage Standard'; break; }
+                     22 { $output = 'Storage Workgroup'; break; }
+                     23 { $output = 'Storage Enterprise'; break; }
+                     24 { $output = 'Small Business'; break; }
+                     25 { $output = 'Small Business Server Premium Edition'; break; }
+                     27 { $output = 'Windows Enterprise Edition'; break; }
+                     28 { $output = 'Windows Ultimate Edition'; break; }
+                     29 { $output = 'Windows Server Web Server Edition (Server Core installation)'; break; }
+                     36 { $output = 'Windows Server Standard Edition without Hyper-V'; break; }
+                     37 { $output = 'Windows Server Datacenter Edition without Hyper-V (full installation)'; break; }
+                     38 { $output = 'Windows Server Enterprise Edition without Hyper-V (full installation)'; break; }
+                     39 { $output = 'Windows Server Datacenter Edition without Hyper-V (Server Core installation)'; break; }
+                     40 { $output = 'Windows Server Standard Edition without Hyper-V (Server Core installation)'; break; }
+                     41 { $output = 'Windows Server Enterprise Edition without Hyper-V (Server Core installation)'; break; }
+                     42 { $output = 'Microsoft Hyper-V Server'; break; }
+                     43 { $output = 'Storage Server Express Edition (Server Core installation)'; break; }
+                     44 { $output = 'Storage Server Standard Edition (Server Core installation)'; break; }
+                     45 { $output = 'Storage Server Workgroup Edition (Server Core installation)'; break; }
+                     46 { $output = 'Storage Server Enterprise Edition (Server Core installation)'; break; }
+                     50 { $output = 'Windows Server Essentials (Desktop Experience installation)'; break; }
+                     63 { $output = 'Small Business Server Premium (Server Core installation)'; break; }
+                     64 { $output = 'Windows Compute Cluster Server without Hyper-V'; break; }
+                     97 { $output = 'Windows RT'; break; }
                     101 { $output = 'Windows Home'; break; }
                     103 { $output = 'Windows Professional with Media Center'; break; }
                     104 { $output = 'Windows Mobile'; break; }
@@ -1883,34 +2148,34 @@ function Get-SkWmiValue {
             }
             'OSProductSuite' {
                 switch ($Value) {
-                        1 { $output = 'Small Business Server'; break; }
-                        2 { $output = 'Windows Server 2008'; break; }
-                        4 { $output = 'Windows BackOffice'; break; }
-                        8 { $output = 'Communication Server'; break; }
-                        16 { $output = 'Terminal Services'; break; }
-                        32 { $output = 'Small Business Server'; break; }
-                        64 { $output = 'Windows Embedded'; break; }
+                          1 { $output = 'Small Business Server'; break; }
+                          2 { $output = 'Windows Server 2008'; break; }
+                          4 { $output = 'Windows BackOffice'; break; }
+                          8 { $output = 'Communication Server'; break; }
+                         16 { $output = 'Terminal Services'; break; }
+                         32 { $output = 'Small Business Server'; break; }
+                         64 { $output = 'Windows Embedded'; break; }
                         128 { $output = 'DataCenter Edition'; break; }
                         256 { $output = 'Terminal Services, single-session'; break; }
                         512 { $output = 'Windows Home Edition'; break; }
-                        1024 { $output = 'Web Server Edition'; break; }
-                        8192 { $output = 'Storage Server Edition'; break; }
-                    16384 { $output = 'Compute Cluster Edition'; break; }
+                       1024 { $output = 'Web Server Edition'; break; }
+                       8192 { $output = 'Storage Server Edition'; break; }
+                      16384 { $output = 'Compute Cluster Edition'; break; }
                     default { $output = $Value; break; }
                 }
                 break;
             }
             'OSType' {
                 switch ($Value) {
-                        1 { $output = 'Other'; break; }
-                        2 { $output = 'MacOS'; break; }
-                        3 { $output = 'ATT UNIX'; break; }
-                        4 { $output = 'DGUX'; break; }
-                        5 { $output = 'DEC NT'; break; }
-                        6 { $output = 'Digital UNIX'; break; }
-                        7 { $output = 'OpenVMS'; break; }
-                        8 { $output = 'HPUX'; break; }
-                        9 { $output = 'AIX'; break; }
+                     1 { $output = 'Other'; break; }
+                     2 { $output = 'MacOS'; break; }
+                     3 { $output = 'ATT UNIX'; break; }
+                     4 { $output = 'DGUX'; break; }
+                     5 { $output = 'DEC NT'; break; }
+                     6 { $output = 'Digital UNIX'; break; }
+                     7 { $output = 'OpenVMS'; break; }
+                     8 { $output = 'HPUX'; break; }
+                     9 { $output = 'AIX'; break; }
                     10 { $output = 'MVX'; break; }
                     11 { $output = 'OS400'; break; }
                     12 { $output = 'OS/2'; break; }
@@ -2141,7 +2406,7 @@ function Get-SkWmiPropTableSingle {
     )
     try {
         if (Test-Connection -ComputerName $ComputerName -Count 1 -Quiet) {
-            $props = Get-WmiObject -Class $WmiClass -ComputerName $ComputerName -ErrorAction SilentlyContinue
+            $props  = Get-WmiObject -Class $WmiClass -ComputerName $ComputerName -ErrorAction SilentlyContinue
             #$props = Get-CimInstance -ClassName $WmiClass -ComputerName $ComputerName -ErrorAction SilentlyContinue
             $output = "<table id=table2>"
             foreach ($p in $props.Properties) {
@@ -2165,21 +2430,26 @@ function Get-SkWmiPropTableSingle {
 }
 
 # https://gallery.technet.microsoft.com/scriptcenter/0e43993a-895a-4afe-a2b2-045a5146048a
-function Get-SkLoggedOnUser ($ComputerName) { 
+function Get-SkLoggedOnUser {
+	param (
+		[parameter(Mandatory=$True)]
+		[ValidateNotNullOrEmpty()]
+		[string] $ComputerName
+	)
     try {
         $regexa = '.+Domain="(.+)",Name="(.+)"$' 
         $regexd = '.+LogonId="(\d+)"$'
         $logontype = @{ 
-            "0"="Local System" 
-            "2"="Interactive" #(Local logon) 
-            "3"="Network" # (Remote logon) 
-            "4"="Batch" # (Scheduled task) 
-            "5"="Service" # (Service account logon) 
-            "7"="Unlock" #(Screen saver) 
-            "8"="NetworkCleartext" # (Cleartext network logon) 
-            "9"="NewCredentials" #(RunAs using alternate credentials) 
-            "10"="RemoteInteractive" #(RDP\TS\RemoteAssistance) 
-            "11"="CachedInteractive" #(Local w\cached credentials) 
+             "0" = "Local System" 
+             "2" = "Interactive" #(Local logon) 
+             "3" = "Network" # (Remote logon) 
+             "4" = "Batch" # (Scheduled task) 
+             "5" = "Service" # (Service account logon) 
+             "7" = "Unlock" #(Screen saver) 
+             "8" = "NetworkCleartext" # (Cleartext network logon) 
+             "9" = "NewCredentials" #(RunAs using alternate credentials) 
+            "10" = "RemoteInteractive" #(RDP\TS\RemoteAssistance) 
+            "11" = "CachedInteractive" #(Local w\cached credentials) 
         }
         $logon_sessions = @(Get-WmiObject Win32_LogonSession -ComputerName $ComputerName -ErrorAction SilentlyContinue) 
         $logon_users    = @(Get-WmiObject Win32_LoggedOnUser -ComputerName $ComputerName -ErrorAction SilentlyContinue) 
@@ -2304,127 +2574,244 @@ function Get-SkWinEvents {
     Write-Output $output
 }
 
-function Set-SkDefaults {
-    param (
-        [parameter()]
-            [ValidateSet('Dark','Light')]
-            [string] $Theme = "Dark",
-        [parameter()]
-            [ValidateSet('True','False')]
-            [string] $EnableADFeatures = 'True',
-        [parameter()]
-            [ValidateSet('True','False')]
-            [string] $EnableCMFeatures = 'True',
-        [parameter()]
-            [ValidateNotNullOrEmpty()]
-            [string] $ConfigMgrDBHost = 'cm01.contoso.local',
-        [parameter()]
-            [ValidateNotNullOrEmpty()]
-            [string] $ConfigMgrSMSProvider = 'cm01.contoso.local',
-        [parameter()]
-            [ValidateLength(3,3)]
-            [string] $ConfigMgrSiteCode = 'P01',
-        [parameter()]
-            [ValidateSet('True','False')]
-            [string] $ModifyADGroups = 'True',
-        [parameter()]
-            [ValidateSet('True','False')]
-            [string] $ModifyCMCollections = 'True'
-    )
-    $cfgfile = "$($env:USERPROFILE)\Documents\skconfig.txt"
-    $params = [ordered]@{
-        _Comment = "SkatterTools configuration file. Created by Set-SkDefaults"
-        _LastUpdated         = (Get-Date)
-        _UpdatedBy           = $env:USERNAME
-        _LocalHost           = $env:COMPUTERNAME
-        SkAPPNAME            = "SkatterTools"
-        SkTheme              = $Theme
-        SkADEnabled          = $EnableADFeatures
-        SkADGroupManage      = $ModifyADGroups
-        SkCMEnabled          = $EnableCMFeatures
-        SkCmDBHost           = $ConfigMgrDBHost
-        SkCmSMSProvider      = $ConfigMgrSMSProvider
-        SkCmSiteCode         = $ConfigMgrSiteCode
-        SkCmCollectionManage = $ModifyCMCollections
-    }
-    $params.Keys | %{ "$($_) = $($params.Item($_))" } | Out-File $cfgfile
+function Write-SkPieChart {
+	param (
+		[parameter(Mandatory=$False)]
+		[string] $Query = "",
+		[parameter(Mandatory=$False)]
+		[string] $QueryFile = "",
+		[parameter(Mandatory=$True)]
+		[string] $Title,
+		[parameter(Mandatory=$False)]
+		[int] $ChartWidth  = 600,
+		[parameter(Mandatory=$False)]
+		[int] $ChartHeight = 450
+	)
+	try {
+		if ($QueryFile -ne "") {
+			if (Test-Path $QueryFile) {
+				$qfile = $QueryFile
+			}
+			else {
+				if (Test-Path (Join-Path -Path $PSScriptRoot -ChildPath "reports\$QueryFile")) {
+					$qfile = (Join-Path -Path $PSScriptRoot -ChildPath "reports\$QueryFile")
+					$dataset = @(Invoke-DbaQuery -SqlInstance $SkCmDbHost -Database "CM_$SkCmSiteCode" -File $qfile)
+				}
+				else {
+					throw "$QueryFile not found"
+				}
+			}
+		}
+		elseif ($Query -ne "") {
+			$dataset = @(Invoke-DbaQuery -SqlInstance $SkCmDbHost -Database "CM_$SkCmSiteCode" -Query $query)
+		}
+		else {
+			throw "Query and QueryFile parameters cannot both be null"
+		}
+		$columnNames = $dataset[0].Table.Columns.ColumnName
+		$cdata = '[' + $(($columnNames | %{ "'$_'" }) -join ',') + '],'
+		$rowcount = $dataset.count
+		$index = 0
+		foreach ($row in $dataset) {
+			$cdata += "`n  ['$($row.item(0))', $($row.item(1))]"
+			if ($index -lt $rowcount) { $cdata += "," }
+			$index++
+		}
+		$output = "<div id=`"piechart`"></div>
+		<script type=`"text/javascript`" src=`"https://www.gstatic.com/charts/loader.js`"></script>
+		<script type=`"text/javascript`">
+		google.charts.load('current', {'packages':['corechart']});
+		google.charts.setOnLoadCallback(drawChart);
+		
+		function drawChart() {
+			var data = google.visualization.arrayToDataTable([
+				$cdata
+			]);
+			var options = {
+				'title':'$Title', 
+				'width':$ChartWidth, 
+				'height':$ChartHeight,
+				'pieHole': .5,
+				'is3D': true,
+				'sliceVisibilityThreshold': .2
+			};
+			var chart = new google.visualization.PieChart(document.getElementById('piechart'));
+			chart.draw(data, options);
+		}
+		</script>"
+		# end of try block
+	}
+	catch {
+		$output = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
+	}
+	finally {
+		Write-Output $output
+	}
 }
 
-function New-SkDesktopShortcut {
-    [CmdletBinding()]
-    param (
-        [parameter(Mandatory=$True)]
-        [string] $Name,
-        [parameter(Mandatory=$True)]
-        [string] $Target,
-        [parameter(Mandatory=$False)]
-        [string] $Arguments = "",
-        [parameter(Mandatory=$False)]
-        [ValidateSet('file','web')]
-        [string] $ShortcutType = 'file',
-        [switch] $AllUsers
-    )
-    if ($ShortcutType -eq 'file' -and (!(Test-Path $Target))) {
-        Write-Warning "Target not found: $Target"
-        break
-    }
-    try {
-        if ($AllUsers) {
-            $ShortcutFile = "$env:ALLUSERSPROFILES\Desktop\$Name.lnk"
-        }
-        else {
-            $ShortcutFile = "$env:USERPROFILE\Desktop\$Name.lnk"
-        }
-        $WScriptShell = New-Object -ComObject WScript.Shell
-        $Shortcut = $WScriptShell.CreateShortcut($ShortcutFile)
-        $Shortcut.TargetPath = $Target
-        if ($ShortcutType -eq 'file' -and $Arguments -ne "") {
-            $Shortcut.Arguments = $Arguments
-            $Shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,167"
-        }
-        else {
-            $Shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,174"
-        }
-        [void]$Shortcut.Save()
-    }
-    catch {
-        Write-Error $Error[0].Exception.Message
-    }
+function Write-SkBarChart {
+	param (
+		[parameter(Mandatory=$False)]
+		[string] $Query = "",
+		[parameter(Mandatory=$False)]
+		[string] $QueryFile = "",
+		[parameter(Mandatory=$True)]
+		[string] $Title,
+		[parameter(Mandatory=$False)]
+		[int] $ChartWidth  = 600,
+		[parameter(Mandatory=$False)]
+		[int] $ChartHeight = 450
+	)
+	try {
+		if ($QueryFile -ne "") {
+			if (Test-Path $QueryFile) {
+				$qfile = $QueryFile
+			}
+			else {
+				if (Test-Path (Join-Path -Path $PSScriptRoot -ChildPath "reports\$QueryFile")) {
+					$qfile = (Join-Path -Path $PSScriptRoot -ChildPath "reports\$QueryFile")
+					$dataset = @(Invoke-DbaQuery -SqlInstance $SkCmDbHost -Database "CM_$SkCmSiteCode" -File $qfile)
+				}
+				else {
+					throw "$QueryFile not found"
+				}
+			}
+		}
+		elseif ($Query -ne "") {
+			$dataset = @(Invoke-DbaQuery -SqlInstance $SkCmDbHost -Database "CM_$SkCmSiteCode" -Query $query)
+		}
+		else {
+			throw "Query and QueryFile parameters cannot both be null"
+		}
+		$columnNames = $dataset[0].Table.Columns.ColumnName
+		$cdata = '[' + $(($columnNames | %{ "'$_'" }) -join ',') + '],'
+		$rowcount = $dataset.count
+		$index = 0
+		foreach ($row in $dataset) {
+			$cdata += "`n  ['$($row.item(0))', $($row.item(1))]"
+			if ($index -lt $rowcount) { $cdata += "," }
+			$index++
+		}
+		$output = "<div id=`"barchart`"></div>
+		<script type=`"text/javascript`" src=`"https://www.gstatic.com/charts/loader.js`"></script>
+		<script type=`"text/javascript`">
+		google.charts.load('current', {'packages':['corechart']});
+		google.charts.setOnLoadCallback(drawChart);
+		
+		function drawChart() {
+			var data = google.visualization.arrayToDataTable([
+				$cdata
+			]);
+			var options = {
+				'title':'$Title', 
+				'width':$ChartWidth, 
+				'height':$ChartHeight
+			};
+			var chart = new google.visualization.BarChart(document.getElementById('barchart'));
+			chart.draw(data, options);
+		}
+		</script>"
+		# end of try block
+	}
+	catch {
+		$output = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
+	}
+	finally {
+		Write-Output $output
+	}
 }
 
-function Get-SkShortcut {
-    [CmdletBinding()]
-    param (
-        [parameter(Mandatory=$True)]
-        [ValidateNotNullOrEmpty()]
-        [string] $Path
-    )
-    if (!(Test-Path $Path)) {
-        Write-Error "$Path was not found!"
-        break
-    }
-    $ScPath = Get-Item $Path
-    try {
-        $WScriptShell = New-Object -ComObject WScript.Shell
-        $Shortcut = $WScriptShell.CreateShortcut($Path)
-        if ($ScPath.Extension -eq '.url') {
-            $props = [ordered]@{
-                Name   = $Shortcut.FullName
-                Target = $Shortcut.TargetPath
-                Icon   = $Shortcut.IconLocation
+function Write-SkRemoteTools {
+	param (
+		[parameter(Mandatory=$True)]
+		[ValidateNotNullOrEmpty()]
+		[string] $ComputerName,
+		[parameter(Mandatory=$True)]
+		[ValidateSet('ad','cm')]
+		[string] $CallSource
+	)
+	$output = "<table id=table2>
+	<tr><td>
+	  <ul>
+  	    <li><a href=`"adtool.ps1?t=gpupdate&c=$SearchValue&cs=$CallSource`">Invoke Group Policy Update (GPUPDATE)</a></li>
+  	    <li><a href=`"adtool.ps1?t=gpresult&c=$SearchValue&cs=$CallSource`">Invoke Group Policy Result (GPRESULT)</a></li>
+	    <li><a href=`"adtool.ps1?t=ccmrepair&c=$SearchValue&cs=$CallSource`">CCM Client Repair (CCMRepair)</a></li>
+	    <li><a href=`"adtool.ps1?t=restart&c=$SearchValue&cs=$CallSource`">Restart Computer (Restart)</a></li>
+		<li><a href=`"adtool.ps1?t=shutdown&c=$SearchValue&cs=$CallSource`">Shut Down Computer (Shutdown)</a></li>
+		<li><a href=`"adtool.ps1?t=cancelshutdown&c=$SearchValue&cs=$CallSource`">Cancel Pending Shutdown or Restart</a></li>
+	  </ul>
+	</td></tr>
+	</table>"
+	Write-Output $output
+}
+
+<#
+.DESCRIPTION
+    Returns value assignment for specified registry key
+.PARAMETER Hive
+    [required] (list) 'HKLM','HKCU', or 'HKCR'. Note that 'HKCU' is not
+    allowed when $ComputerName is specified
+.PARAMETER KeyPath
+    [required] (string) Registry key path
+.PARAMETER ValueName
+    [required] (string) Name of value to query
+.PARAMETER ComputerName
+    [optional] (string(array)) Names of computers to query.
+    If empty or $null, the local computer is assumed
+.EXAMPLE
+    Get-RegValue -Hive HKLM -KeyPath "SOFTWARE\Microsoft\Windows\CurrentVersion" -ValueName "DevicePath"
+.EXAMPLE
+    Get-RegValue -Hive HKLM -KeyPath "SOFTWARE\Microsoft\Windows\CurrentVersion" -ValueName "DevicePath" -ComputerName FS1,FS2,FS3
+.NOTES
+    Author David Stein
+    07.26.2017
+#>
+
+function Get-SkRegValue {
+	param (
+		[parameter(Mandatory=$True)]
+            [ValidateSet('HKLM','HKCU','HKCR')]
+            [string] $Hive,
+        [parameter(Mandatory=$True)] 
+            [string] $KeyPath,
+		[parameter(Mandatory=$True)] 
+            [string] $ValueName,
+		[parameter(Mandatory=$False)] 
+            [string[]] $ComputerName = ""
+	)
+	if ($ComputerName -ne "") {
+		try {
+            switch($Hive) {
+                'HKLM' {$Reg = [Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine, $ComputerName); break;}
+                'HKCR' {$Reg = [Microsoft.Win32.RegistryKey]::OpenRemoteBaseKey([Microsoft.Win32.RegistryHive]::ClassesRoot, $ComputerName); break;}
+                default {
+                    Write-Error "HKCU is not available when querying remote computers"
+                    break;
+                }
             }
-        }
-        else {
-            $props = [ordered]@{
-                Name      = $Shortcut.FullName
-                Target    = $Shortcut.TargetPath
-                Arguments = $Shortcut.Arguments
-                Icon      = $Shortcut.IconLocation
+			$RegSubKey = $Reg.OpenSubKey("$KeyPath")
+			Write-Output $RegSubKey.GetValue("$ValueName")
+		}
+		catch {
+			Write-Warning "error: unable to access registry key/value."
+            Write-Output $null
+		}
+	}
+	else {
+        try {
+            switch ($Hive) {
+                'HKLM' {$reg = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::LocalMachine,'default'); break;}
+                'HKCR' {$reg = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::ClassesRoot,'default'); break;}
+                'HKCU' {$reg = [Microsoft.Win32.RegistryKey]::OpenBaseKey([Microsoft.Win32.RegistryHive]::CurrentUser,'default'); break;}
             }
+		    $RegSubKey = $Reg.OpenSubKey("$KeyPath")
+		    $RegSubKey.GetValue("$ValueName")
         }
-        New-Object PSObject -Property $props
-    }
-    catch {}
+        catch {
+            Write-Warning "error: unable to access registry key/value."
+            Write-Output $null
+        }
+	}
 }
 
 function Get-SkToolsInfo {

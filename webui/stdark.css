@@ -226,6 +226,23 @@ h1,h2,h3 {
     color: #000;
 }
 
+.dyn1a {
+    text-align: center;
+    font-family: verdana;
+    font-size: 10pt;
+    background-color: #343e4f;
+    color: #fff;
+}
+
+.dyn2a {
+    text-align: center;
+    font-family: verdana;
+    font-size: 10pt;
+    cursor: pointer;
+    background-color: #435168;
+    color: #fff;
+}
+
 .btab {
     text-align: center;
     font-family: verdana;

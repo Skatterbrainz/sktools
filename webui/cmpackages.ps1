@@ -19,7 +19,7 @@ elseif (![string]::IsNullOrEmpty($Script:SearchValue)) {
 }
 $xxx = "requesting query result"
 $content = Get-SkQueryTableMultiple -QueryFile "cmpackages.sql" -PageLink "cmpackages.ps1" -Columns ('PackageID','PkgName','PackageType','PkgType','Description','Version') -NoCaption
-$tabset  = New-SkMenuTabSet -BaseLink 'cmpackages.ps1?x=begins&f=name&v=' -DefaultID $TabSelected
+$tabset  = Write-SkMenuTabSetAlphaNumeric -BaseLink 'cmpackages.ps1?x=begins&f=name&v=' -DefaultID $TabSelected
 $content += Write-SkDetailView -PageRef "cmpackages.ps1" -Mode $Detailed
 
 Write-SkWebContent

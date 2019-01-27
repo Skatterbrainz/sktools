@@ -9,7 +9,7 @@ $menulist = ""
 $tabset   = ""
 $pagelink = "adsites.ps1"
 
-$tabset  = New-SkMenuTabSet -BaseLink 'adsites.ps1?x=begins&f=SiteName&v=' -DefaultID $TabSelected
+$tabset  = Write-SkMenuTabSetAlphaNumeric -BaseLink "$pagelink`?x=begins&f=SiteName&v=" -DefaultID $TabSelected
 
 try {
     $Forest = [System.DirectoryServices.ActiveDirectory.Forest]::GetCurrentForest()

@@ -9,52 +9,14 @@ $menulist = ""
 $tabset   = ""
 $pagelink = "adforest.ps1"
 
-$schemaVersion = $(
-    #https://blogs.msmvps.com/richardsiddaway/2016/12/14/active-directory-schema-versions/
-    $sch = [System.DirectoryServices.ActiveDirectory.ActiveDirectorySchema]::GetCurrentSchema()
-    $de = $sch.GetDirectoryEntry()
-    switch ($de.ObjectVersion) {
-        13 {"{0,25} " -f "Schema Version $($de.ObjectVersion) = Windows 2000"; break}
-        30 {"{0,25} " -f "Schema Version $($de.ObjectVersion) = Windows 2003"; break}
-        31 {"{0,25} " -f "Schema Version $($de.ObjectVersion) = Windows 2003 R2"; break}
-        44 {"{0,25} " -f "Schema Version $($de.ObjectVersion) = Windows 2008"; break}
-        47 {"{0,25} " -f "Schema Version $($de.ObjectVersion) = Windows 2008 R2"; break}
-        56 {"{0,25} " -f "Schema Version $($de.ObjectVersion) = Windows 2012"; break}
-        69 {"{0,25} " -f "Schema Version $($de.ObjectVersion) = Windows 2012 R2"; break}
-        87 {"{0,25} " -f "Schema Version $($de.ObjectVersion) = Windows 2016"; break}
-        default {"{0,25} {1,2} " -f "Unknown Schema Version", $($de.ObjectVersion); break}
-    }
-)
-
 $forest = [System.DirectoryServices.ActiveDirectory.Forest]::GetCurrentForest()
-
-switch ($forest.ForestModeLevel) {
-    0 { $flvl = 'Windows Server 2000'; break; }
-    1 { $flvl = 'Windows Server 2003 Interim'; break; }
-    2 { $flvl = 'Windows Server 2003'; break; }
-    3 { $flvl = 'Windows Server 2008'; break; }
-    4 { $flvl = 'Windows Server 2008 R2'; break; }
-    5 { $flvl = 'Windows Server 2012'; break; }
-    6 { $flvl = 'Windows Server 2012 R2'; break; }
-    7 { $flvl = 'Windows Server 2016'; break; }
-    default { $flvl = 'Windows Server 2000'; break; }
-}
-
 $rootDom = $forest.RootDomain
-#$rootDom.DomainControllers
-switch ($rootDom.DomainModeLevel) {
-    0 { $dlvl = 'Windows Server 2000 mixed'; break; }
-    1 { $dlvl = 'Windows Server 2003 Interim'; break; }
-    2 { $dlvl = 'Windows Server 2003'; break; }
-    3 { $dlvl = 'Windows Server 2008'; break; }
-    4 { $dlvl = 'Windows Server 2008 R2'; break; }
-    5 { $dlvl = 'Windows Server 2012'; break; }
-    6 { $dlvl = 'Windows Server 2012 R2'; break; }
-    7 { $dlvl = 'Windows Server 2016'; break; }
-    default { $dlvl = 'Windows Server 2000'; break; }
-}
+$schemaVersion = Get-SkAdForestSchemaVersion
 
-$im = $rootDom.InfrastructureRoleOwner
+$dlvl = Get-SkAdDomainLevel -Level $rootDom.DomainModeLevel
+$flvl = Get-SkAdForestLevel -Level $forest.ForestModeLevel
+
+$im  = $rootDom.InfrastructureRoleOwner
 $pdc = $rootDom.PdcRoleOwner
 $rid = $rootDom.RidRoleOwner
 
@@ -88,18 +50,18 @@ $ridnx = "<a href=`"adcomputer.ps1?f=Name&v=$($($ridName -split '\.')[0])`">$rid
 $pdcnx = "<a href=`"adcomputer.ps1?f=Name&v=$($($pdcName -split '\.')[0])`">$pdcName</a>"
 $imnx  = "<a href=`"adcomputer.ps1?f=Name&v=$($($imName -split '\.')[0])`">$imName</a>"
 
-$content = "<table id=table2>"
-$content += "<tr><td>Active Directory Forest</td><td>$($forest.Name)</td></tr>"
-$content += "<tr><td>Forest Schema</td><td>$schemaVersion</td></tr>"
-$content += "<tr><td>Forest Mode Level</td><td>$flvl</td></tr>"
-$content += "<tr><td>Root Domain Level</td><td>$dlvl</td></tr>"
-$content += "<tr><td>FSMO - PDC emulator</td><td>$pdcnx ($pdcIP - $pdcOS)</td></tr>"
-$content += "<tr><td>FSMO - Infrastructure master</td><td>$imnx ($imIP - $imOS)</td></tr>"
-$content += "<tr><td>FSMO - RID master</td><td>$ridnx ($ridIP - $ridOS)</td></tr>"
-$content += "<tr><td>FSMO - Schema master</td><td>$smdcx</td></tr>"
-$content += "<tr><td>FSMO - Naming master</td><td>$smnmx</td></tr>"
-$content += "<tr><td>Global Catalogs</td><td><ul>$($forest.GlobalCatalogs | %{"<li>$_</li>"})</ul></td></tr>"
-$content += "<tr><td>Partitions</td><td><ul>$($forest.ApplicationPartitions | %{"<li>$_</li>"})</ul></td></tr>"
-$content += "</table>"
+$content = "<table id=table2>
+<tr><td>Active Directory Forest</td><td>$($forest.Name)</td></tr>
+<tr><td>Forest Schema</td><td>$schemaVersion</td></tr>
+<tr><td>Forest Mode Level</td><td>$flvl</td></tr>
+<tr><td>Root Domain Level</td><td>$dlvl</td></tr>
+<tr><td>FSMO - PDC emulator</td><td>$pdcnx ($pdcIP - $pdcOS)</td></tr>
+<tr><td>FSMO - Infrastructure master</td><td>$imnx ($imIP - $imOS)</td></tr>
+<tr><td>FSMO - RID master</td><td>$ridnx ($ridIP - $ridOS)</td></tr>
+<tr><td>FSMO - Schema master</td><td>$smdcx</td></tr>
+<tr><td>FSMO - Naming master</td><td>$smnmx</td></tr>
+<tr><td>Global Catalogs</td><td><ul>$($forest.GlobalCatalogs | %{"<li>$_</li>"})</ul></td></tr>
+<tr><td>Partitions</td><td><ul>$($forest.ApplicationPartitions | %{"<li>$_</li>"})</ul></td></tr>
+</table>"
 
 Write-SkWebContent

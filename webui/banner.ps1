@@ -9,7 +9,7 @@ if (Test-Path $imx) {
 <link rel="stylesheet" type="text/css" href="$SkTheme"/>
 </head>
 <body class="bannerbody">
-<span onClick="window.top.location.href='./index.htm'" style=`"vertical-align:absmiddle`" title=`"$Global:SkAppName`">$img $($Global:SkAppName)</span>
+<span onClick="window.top.location.href='./'" style=`"vertical-align:absmiddle`" title=`"$Global:SkAppName`">$img $($Global:SkAppName)</span>
 </body>
 </html>
 "@

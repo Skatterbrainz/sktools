@@ -14,9 +14,11 @@ $queryfile = "cmscript.sql"
 $params = @{
     QueryFile = $queryfile
     PageLink  = $pagelink
+	FieldName = $SearchField
+	Value     = $SearchValue
     Columns   = ('ScriptName','ScriptVersion','ScriptGuid','Author','ScriptType','Feature','ApprovalState','Approval','Approver','Script','ScriptHashAlgorithm','ScriptHash','LastUpdateTime','Comment')
 }
-$content = Get-SkQueryTableSingle @params
-$content += Write-SkDetailView -PageRef "cmscript.ps1" -Mode $Detailed
+$content = Get-SkQueryTableSingle2 @params
+$content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 
 Write-SkWebContent

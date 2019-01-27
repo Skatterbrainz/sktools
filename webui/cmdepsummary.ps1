@@ -22,7 +22,7 @@ $params = @{
 	NoCaption = $True
 }
 $content = Get-SkQueryTableMultiple @params
-$tabset  = New-SkMenuTabSet -BaseLink "$pagelink`?x=begins`&f=softwarename`&v=" -DefaultID $TabSelected
+$tabset  = Write-SkMenuTabSetAlphaNumeric -BaseLink "$pagelink`?x=begins`&f=softwarename`&v=" -DefaultID $TabSelected
 $content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 
 Write-SkWebContent

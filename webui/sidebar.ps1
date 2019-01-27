@@ -13,9 +13,12 @@ if ($SkAdEnabled -ne 'false') {
 <button class="accordion" title="Active Directory">Active Directory</button>
 <div class="panel">
 	<ul class="ulmenu">
-		<li class="limenu"><a href="adusers.ps1" target="main" title="AD Users">Users</a></li>
-		<li class="limenu"><a href="adgroups.ps1" target="main" title="AD Groups">Groups</a></li>
-		<li class="limenu"><a href="adcomputers.ps1" target="main" title="AD Computers">Computers</a></li>
+		<li class="limenu"><a href="adusers.ps1?f=username&tab=$SkTabSelectAdUsers" target="main" title="AD Users">Users</a></li>
+		<li class="limenu"><a href="adgroups.ps1?f=name&tab=$SkTabSelectAdGroups" target="main" title="AD Groups">Groups</a></li>
+		<li class="limenu"><a href="adcomputers.ps1?f=name&tab=$SkTabSelectAdComputers" target="main" title="AD Computers">Computers - All</a></li>
+		<li class="limenu"><a href="adcomputers.ps1?f=OSType&v=Server&x=equals&tab=$SkTabSelectAdComputers" target="main" title="AD Servers">Computers - Servers</a></li>
+		<li class="limenu"><a href="adcomputers.ps1?f=OSType&v=Domain Controller&x=equals&tab=$SkTabSelectAdComputers" target="main" title="AD Domain Controllers">Computers - DCs</a></li>
+		<li class="limenu"><a href="adcomputers.ps1?f=OSType&v=Workstation&x=equals&tab=$SkTabSelectAdComputers" target="main" title="AD Workstations">Computers - Wkstns</a></li>
 		<li class="limenu"><a href="adforest.ps1" target="main" title="AD Forest">Forest</a></li>
         <li class="limenu"><a href="addomain.ps1" target="main" title="AD Domain">Domain</a></li>
 		<li class="limenu"><a href="adsites.ps1" target="main" title="AD Sites">Sites</a></li>
@@ -32,8 +35,10 @@ if ($SkCmEnabled -ne 'false') {
 <button class="accordion" title="Configuration Manager Assets">CM Assets</button>
 <div class="panel">
 	<ul class="ulmenu">
-		<li class="limenu"><a href="cmusers.ps1" title="Users" target="main">Users</a></li>
-		<li class="limenu"><a href="cmdevices.ps1" title="Devices" target="main">Devices</a></li>
+		<li class="limenu"><a href="cmusers.ps1?tab=$SkTabSelectCmUsers" title="Users" target="main">Users</a></li>
+		<li class="limenu"><a href="cmdevices.ps1?$SkTabSelectCmDevices" title="Devices" target="main">Devices - All</a></li>
+		<li class="limenu"><a href="cmdevices.ps1?f=OSType&v=Server&x=equals" title="Servers" target="main">Devices - Servers</a></li>
+		<li class="limenu"><a href="cmdevices.ps1?f=OSType&v=Workstation&x=equals" title="Workstations" target="main">Devices - Wkstns</a></li>
 		<li class="limenu"><a href="cmcollections.ps1?t=1" title="User Collections" target="main">User Collections</a></li>
 		<li class="limenu"><a href="cmcollections.ps1?t=2" title="Device Collections" target="main">Device Collections</a></li>
 	</ul>
@@ -120,9 +125,9 @@ $content += @"
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="stylesheet" type="text/css" href="$SkTheme"/>
-<script src="accordion.js"></script>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="$SkTheme" />
+	<script src="accordion.js"></script>
 </head>
 <body style="margin: 0;">
 

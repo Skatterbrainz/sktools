@@ -1,4 +1,10 @@
 ﻿Get-SkParams
+if ([string]::IsNullOrEmpty($Script:TabSelected)) {
+	if (![string]::IsNullOrEmpty($SkTabSelectCmUsers)) {
+		$TabSelected = $SkTabSelectCmUsers
+		$Script:SearchValue = $TabSelected
+	}
+}
 
 $PageTitle   = "CM Users"
 if (![string]::IsNullOrEmpty($Script:SearchValue)) {
@@ -12,11 +18,13 @@ $qfile    = "cmusers.sql"
 $params = @{
 	QueryFile = $qfile
 	PageLink  = $pagelink
-	Columns   = ('ResourceID','UserName','AADUserID','Domain','UPN','Department','Title')
+	Columns   = ('UserName','ResourceID','AADUserID','Domain','UPN','Department','Title')
 	Sorting   = 'UserName'
 }
 $content  = Get-SkQueryTableMultiple @params
-$tabset   = New-SkMenuTabSet -BaseLink 'cmusers.ps1?x=begins&f=UserName&v=' -DefaultID $TabSelected
+$tabset   = Write-SkMenuTabSetAlphaNumeric -BaseLink "$pagelink`?f=UserName&x=begins&v=" -DefaultID $Script:TabSelected
 $content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
+
+$content += "<p>Tab: $TabSelected</p>"
 
 Write-SkWebContent

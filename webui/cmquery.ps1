@@ -14,9 +14,11 @@ $queryfile = "cmquery.sql"
 $params = @{
     QueryFile = $queryfile
     PageLink  = $pagelink
+	FieldName = $SearchField
+	Value     = $SearchValue
     Columns   = ('QueryName','Comments','QueryKey','Architecture','Lifetime','QryFmtKey','QueryType','CollectionID','WQL','SQL')
 }
-$content = Get-SkQueryTableSingle @params
+$content = Get-SkQueryTableSingle2 @params
 $content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 
 Write-SkWebContent

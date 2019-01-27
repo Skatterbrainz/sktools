@@ -6,7 +6,7 @@ $CollectionName = $PoshPost.collname
 $CollectionType = $PoshPost.colltype
 $TargetType     = $PoshPost.targettype
 
-$PageTitle    = "Add Collection Member"
+$PageTitle = "Add Collection Member"
 $query   = ""
 $tabset  = ""
 

@@ -13,7 +13,7 @@ $params = @{
     QueryFile = $queryfile 
     PageLink  = $pagelink 
     Columns   = ('QueryName','QueryID','Comments','TargetClassName','LimitToCollectionID')
-    Sorting   = 'FieldName'
+    Sorting   = 'QueryName'
 }
 
 $content = Get-SkQueryTableMultiple @params

@@ -19,7 +19,7 @@ $tabset   = ""
 $pagelink = Split-Path -Leaf $MyInvocation.MyCommand.Definition
 
 $content = Get-SkQueryTableMultiple -QueryFile $qfname -PageLink "cmcollections.ps1" -NoCaption
-$tabset  = New-SkMenuTabSet -BaseLink "cmcollections.ps1?t=$CollectionType&f=collectionname&x=begins&v=" -DefaultID $TabSelected
+$tabset  = Write-SkMenuTabSetAlphaNumeric -BaseLink "cmcollections.ps1?t=$CollectionType&f=collectionname&x=begins&v=" -DefaultID $TabSelected
 $content += Write-SkDetailView -PageRef "cmcollections.ps1" -Mode $Detailed
 
 Write-SkWebContent

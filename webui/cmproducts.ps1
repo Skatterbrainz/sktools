@@ -23,7 +23,7 @@ group by productname0, productcode0, productversion0, publisher0"
     Sorting   = 'ProductName'
 }
 
-$tabset  = New-SkMenuTabSet -BaseLink "$pagelink`?x=begins`&f=productname`&v=" -DefaultID $TabSelected
+$tabset  = Write-SkMenuTabSetAlphaNumeric -BaseLink "$pagelink`?x=begins`&f=productname`&v=" -DefaultID $TabSelected
 $content = Get-SkQueryTableMultiple @params
 $content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 

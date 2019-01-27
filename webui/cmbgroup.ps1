@@ -15,9 +15,11 @@ try {
 			$params = @{
 				 QueryFile = "cmboundarygroup.sql" 
 				 PageLink  = $pagelink 
+				 FieldName = $SearchField
+				 Value     = $SearchValue
 				 Columns   = ('BGName','DefaultSiteCode','GroupID','GroupGUID','Description','Flags','CreatedBy','CreatedOn','ModifiedBy','ModifiedOn','MemberCount','SiteSystemCount','Shared') 
 			}
-			$content = Get-SkQueryTableSingle @params
+			$content = Get-SkQueryTableSingle2 @params
 			break;
 		}
 		'Boundaries' {
@@ -48,9 +50,15 @@ try {
 			foreach ($row in $ss) {
 				$svr = $row.ServerNALPath # '["Display=\\CM02.contoso.local\"]MSWNET:["SMS_SITE=P02"]\\CM02.contoso.local\'
 				$svr = $($svr -split '\\') | Where-Object {![string]::IsNullOrEmpty($_)} | Select -Last 1
+				if (($svr -split '\.').Count -gt 1) {
+					$svx = $svr -split '\.' | Select -First 1
+				}
+				else {
+					$svx = $svr
+				}
 				$content += "<tr>"
 				$content += "<td>$($row.GroupID)</td>"
-				$content += "<td>$svr</td>"
+				$content += "<td><a href=`"cmdevice.ps1?f=name&v=$svx&tab=general`">$svr</a></td>"
 				$content += "<td>$($row.Flags)</td>"
 				$content += "</tr>"
 				$rowcount++
@@ -65,7 +73,7 @@ catch {
 	$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
 }
 $tabs   = @('General','Boundaries','Systems')
-$tabset = New-SkMenuTabSet2 -MenuTabs $tabs -BaseLink $pagelink
+$tabset = Write-SkMenuTabSetNameList -MenuTabs $tabs -BaseLink $pagelink
 $content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
 
 Write-SkWebContent
