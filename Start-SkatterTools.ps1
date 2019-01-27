@@ -1,4 +1,5 @@
 # Copyright (C) 2014 Yusuf Ozturk
+# Update/Modified/Ruined by David M. Stein (c) 2019 based on Start-PoSHServer
 # This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 2 of the License, or (at your option) any later version.
 # This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 # You should have received a copy of the GNU General Public License along with this program; if not, write to the Free Software Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
@@ -7,7 +8,8 @@ function Start-SkatterTools {
 <#
     .SYNOPSIS
      
-        Powershell Web Server to serve HTML and Powershell web contents.
+        Powershell Web Server Console application for viewing and managing Active Directory and 
+		System Center Configuration Manager. Built with PoSHServer.
  
     .DESCRIPTION
      
@@ -71,15 +73,18 @@ function Start-SkatterTools {
 	
     .NOTES
     
-        Author: Yusuf Ozturk
+		sktools by David M. Stein / skatterbrainz
+		website: https://github.com/SkatterBrainz/sktools
+		
+        poshserver 3.7 by Yusuf Ozturk
         Website: http://www.yusufozturk.info
         Email: yusuf.ozturk@outlook.com
         Date created: 09-Oct-2011
         Last modified: 07-Apr-2014
-        Version: 3.7
  
     .LINK
     
+		https://github.com/SkatterBrainz/sktools
         http://www.poshserver.net
 		
 #>
@@ -195,7 +200,7 @@ function Start-SkatterTools {
 	if ($asJob -and $ResultCode -ne "-1"){
 		if ($JobCredentials){
 			Write-Host " "
-			Write-Host "Plase specify user credentials for PoSH Server background job."
+			Write-Host "Please specify user credentials for PoSH Server background job."
 			Write-Host " "
 			$JobUsername = Read-Host -Prompt "Username"
 			$JobSecurePassword = Read-Host -Prompt "Password" -AsSecureString			
@@ -530,38 +535,29 @@ function Start-SkatterTools {
 			}
 			
 			# Start Listener
-			try
-			{
+			try {
 				$Listener.Start()
 			}
-			catch
-			{
+			catch {
 				Add-Content -Value $_ -Path "$LogDirectory\debug.txt"
 			}
 			
 			# Configure SSL
-			try
-			{
-				if ($SSL)
-				{
-					if ($SSLName)
-					{
+			try {
+				if ($SSL) {
+					if ($SSLName) {
 						$PoSHCert = Get-ChildItem -Recurse Cert: | Where-Object { $_.FriendlyName -eq $SSLName }
 						
-						if (!$PoSHCert)
-						{
+						if (!$PoSHCert) {
 							$PoSHCert = Get-ChildItem -Recurse Cert: | Where-Object { $_.FriendlyName -eq "PoSHServer SSL Certificate" }
 						}
 					}
-					else
-					{
+					else {
 						$PoSHCert = Get-ChildItem -Recurse Cert: | Where-Object { $_.FriendlyName -eq "PoSHServer SSL Certificate" }
 					}
 					
-					if (!$PoSHCert)
-					{
-						if ($DebugMode)
-						{
+					if (!$PoSHCert) {
+						if ($DebugMode) {
 							Add-Content -Value "Sorry, I couldn't find your SSL certificate." -Path "$LogDirectory\debug.txt"
 							Add-Content -Value "Creating Self-Signed SSL certificate.." -Path "$LogDirectory\debug.txt"
 						}
@@ -574,18 +570,15 @@ function Start-SkatterTools {
 					Register-PoSHCertificate -SSLIP $SSLIP -SSLPort $SSLPort -Thumbprint $CertThumbprint -DebugMode $DebugMode
 				}
 			}
-			catch
-			{
+			catch {
 				Add-Content -Value $_ -Path "$LogDirectory\debug.txt"
 			}
 			
 			# PoSH Server Welcome Banner
-			try
-			{
+			try {
 				Get-PoSHWelcomeBanner -Hostname $Hostname -Port $Port -SSL $SSL -SSLIP $SSLIP -SSLPort $SSLPort -DebugMode $DebugMode
 			}
-			catch
-			{
+			catch {
 				Add-Content -Value $_ -Path "$LogDirectory\debug.txt"
 			}
 			
@@ -598,12 +591,10 @@ function Start-SkatterTools {
 				. $PoSHModulePath\functions.ps1
 				
 				# Enable Debug Mode
-				if ($DebugMode)
-				{
+				if ($DebugMode) {
 					$DebugPreference = "Continue"
 				}
-				else
-				{
+				else {
 					$ErrorActionPreference = "silentlycontinue"
 				}
 				
@@ -611,8 +602,7 @@ function Start-SkatterTools {
 				. $PoSHModulePath\phpencoding.ps1
 				
 				# PoSH Server Custom Child Config
-				if ($CustomChildConfig)
-				{
+				if ($CustomChildConfig) {
 					. $CustomChildConfig
 				}
 				
@@ -620,21 +610,18 @@ function Start-SkatterTools {
 				$ShouldProcess = $true
 				
 				# Get Server Requests
-				while ($ShouldProcess)
-				{		
+				while ($ShouldProcess) {		
 					# PoSH Server Custom Configuration
 					$PoSHCustomConfigPath = $HomeDirectory + "\config.ps1"
 		
 					# Test Config Path
 					$TestPoSHCustomConfigPath = Test-Path $PoSHCustomConfigPath
 		
-					if (!$TestPoSHCustomConfigPath)
-					{			
+					if (!$TestPoSHCustomConfigPath) {			
 						# Import Config
 						. $PoSHModulePath\config.ps1
 					}
-					else
-					{
+					else {
 						# Import Config
 						. $HomeDirectory\config.ps1
 					}
@@ -677,8 +664,7 @@ function Start-SkatterTools {
 					
 					# Cookie Information
 					$PoSHCookies = $Request.Cookies["PoSHSessionID"];
-					if (!$PoSHCookies)
-					{
+					if (!$PoSHCookies) {
 						$PoSHCookie = New-Object Net.Cookie
 						$PoSHCookie.Name = "PoSHSessionID"
 						$PoSHCookie.Value = New-PoSHTimeStamp
@@ -686,28 +672,24 @@ function Start-SkatterTools {
 					}
 					
 					# Get Default Document
-					if ($File -notlike "*.*" -and $File -like "*/")
-					{
+					if ($File -notlike "*.*" -and $File -like "*/") {
 						$FolderPath = [System.IO.Directory]::GetCurrentDirectory() + $File
 						$RequstURL = [string]$Request.Url
 						$SubfolderName = $File
 						$File = $File + $DefaultDocument
 					}
-					elseif ($File -notlike "*.*" -and $File -notlike "*/")
-					{
+					elseif ($File -notlike "*.*" -and $File -notlike "*/") {
 						$FolderPath = [System.IO.Directory]::GetCurrentDirectory() + $File + "/"
 						$RequstURL = [string]$Request.Url + "/"
 						$SubfolderName = $File + "/"
 						$File = $File + "/" + $DefaultDocument 
 					}
-					else
-					{
+					else {
 						$FolderPath = $Null;
 					}
 					
 					# PoSH API Support
-					if ($File -like "*.psxml")
-					{
+					if ($File -like "*.psxml") {
 						$File = $File.Replace(".psxml",".ps1")
 						
 						# Full File Path
@@ -716,8 +698,7 @@ function Start-SkatterTools {
 						# Get Mime Type
 						$MimeType = "text/psxml"
 					}
-					else
-					{
+					else {
 						# Full File Path
 						$File = [System.IO.Directory]::GetCurrentDirectory() + $File
 						
@@ -730,63 +711,49 @@ function Start-SkatterTools {
 					. $PoSHModulePath\contentfiltering.ps1
 					
 					# Stream Content
-					if ([System.IO.File]::Exists($File) -and $ContentSessionDrop -eq "0" -and $IPSessionDrop -eq "0")  
-					{ 
-						if ($MimeType -eq "text/ps1")
-						{
-							try
-							{
+					if ([System.IO.File]::Exists($File) -and $ContentSessionDrop -eq "0" -and $IPSessionDrop -eq "0") { 
+						if ($MimeType -eq "text/ps1") {
+							try {
 								$Response.ContentType = "text/html"
 								$Response.StatusCode = [System.Net.HttpStatusCode]::OK
 								$LogResponseStatus = $Response.StatusCode
 								$Response = New-Object IO.StreamWriter($Response.OutputStream,[Text.Encoding]::UTF8)
 								$Response.WriteLine("$(. $File)")
 							}
-							catch
-							{
+							catch {
 								Add-Content -Value $_ -Path "$LogDirectory\debug.txt"
 							}
 						}
-						elseif ($MimeType -eq "text/psxml")
-						{
-							try
-							{
+						elseif ($MimeType -eq "text/psxml") {
+							try {
 								$Response.ContentType = "text/xml"
 								$Response.StatusCode = [System.Net.HttpStatusCode]::OK
 								$LogResponseStatus = $Response.StatusCode
 								$Response = New-Object IO.StreamWriter($Response.OutputStream,[Text.Encoding]::UTF8)
 								$Response.WriteLine("$(. $File)")
 							}
-							catch
-							{
+							catch {
 								Add-Content -Value $_ -Path "$LogDirectory\debug.txt"
 							}
 						}
-						elseif ($MimeType -eq "text/php")
-						{
-							try
-							{
-								if ($PHPCgiPath)
-								{
+						elseif ($MimeType -eq "text/php") {
+							try {
+								if ($PHPCgiPath) {
 									$TestPHPCgiPath = Test-Path -Path $PHPCgiPath
 								}
-								else
-								{
+								else {
 									$TestPHPCgiPath = $false
 								}
 								
-								if ($TestPHPCgiPath)
-								{
-									if ($File -like "C:\Windows\*")
-									{
+								if ($TestPHPCgiPath) {
+									if ($File -like "C:\Windows\*") {
 										$Response.ContentType = "text/html"
 										$Response.StatusCode = [System.Net.HttpStatusCode]::NotFound
 										$LogResponseStatus = $Response.StatusCode
 										$Response = New-Object IO.StreamWriter($Response.OutputStream,[Text.Encoding]::UTF8)
 										$Response.WriteLine("$(. $PoSHModulePath\phpsecurityerror.ps1)")
 									}
-									else
-									{
+									else {
 										$Response.ContentType = "text/html"
 										$PHPContentOutput = Get-PoSHPHPContent -PHPCgiPath "$PHPCgiPath" -File "$File" -PoSHPHPGET $PoSHQuery.PoSHQueryString -PoSHPHPPOST $PoSHPost.PoSHPostStream
 										$PHPContentOutput = Set-PHPEncoding -PHPOutput $PHPContentOutput
@@ -796,8 +763,7 @@ function Start-SkatterTools {
 										$Response.WriteLine("$PHPContentOutput")
 									}
 								}
-								else
-								{
+								else {
 									$Response.ContentType = "text/html"
 									$Response.StatusCode = [System.Net.HttpStatusCode]::NotFound
 									$LogResponseStatus = $Response.StatusCode
@@ -805,15 +771,12 @@ function Start-SkatterTools {
 									$Response.WriteLine("$(. $PoSHModulePath\phpcgierror.ps1)")						
 								}
 							}
-							catch
-							{
+							catch {
 								Add-Content -Value $_ -Path "$LogDirectory\debug.txt"
 							}
 						}				
-						else
-						{
-							try
-							{
+						else {
+							try {
 								$Response.ContentType = "$MimeType"
 								$FileContent = [System.IO.File]::ReadAllBytes($File)
 								$Response.ContentLength64 = $FileContent.Length
@@ -821,35 +784,27 @@ function Start-SkatterTools {
 								$LogResponseStatus = $Response.StatusCode
 								$Response.OutputStream.Write($FileContent, 0, $FileContent.Length)
 							}
-							catch
-							{
+							catch {
 								Add-Content -Value $_ -Path "$LogDirectory\debug.txt"
 							}
 						}
 					}
-					else
-					{
+					else {
 						# Content Filtering and IP Restriction Control
-						if ($ContentSessionDrop -eq "0" -and $IPSessionDrop -eq "0")
-						{
-							if ($FolderPath)
-							{
+						if ($ContentSessionDrop -eq "0" -and $IPSessionDrop -eq "0") {
+							if ($FolderPath) {
 								$TestFolderPath = Test-Path -Path $FolderPath
 							}
-							else
-							{
+							else {
 								$TestFolderPath = $false
 							}
 						}
-						else
-						{
+						else {
 							$TestFolderPath = $false
 						}
 						
-						if ($DirectoryBrowsing -eq "On" -and $TestFolderPath)
-						{
-							try
-							{
+						if ($DirectoryBrowsing -eq "On" -and $TestFolderPath) {
+							try {
 								$Response.ContentType = "text/html"
 								$Response.StatusCode = [System.Net.HttpStatusCode]::OK
 								$LogResponseStatus = $Response.StatusCode
@@ -858,23 +813,19 @@ function Start-SkatterTools {
 								$DirectoryContent = (Get-DirectoryContent -Path "$FolderPath" -HeaderName $HeaderName -RequestURL $RequestURL -SubfolderName $SubfolderName)
 								$Response.WriteLine("$DirectoryContent")
 							}
-							catch
-							{
+							catch {
 								Add-Content -Value $_ -Path "$LogDirectory\debug.txt"
 							}
 						}
-						else
-						{
-							try
-							{
+						else {
+							try {
 								$Response.ContentType = "text/html"
 								$Response.StatusCode = [System.Net.HttpStatusCode]::NotFound
 								$LogResponseStatus = $Response.StatusCode
 								$Response = New-Object IO.StreamWriter($Response.OutputStream,[Text.Encoding]::UTF8)
 								$Response.WriteLine("$(. $PoSHModulePath\notfound.ps1)")
 							}
-							catch
-							{
+							catch {
 								Add-Content -Value $_ -Path "$LogDirectory\debug.txt"
 							}
 						}
@@ -884,19 +835,16 @@ function Start-SkatterTools {
 					. $PoSHModulePath\log.ps1
 					
 					# Close Connection
-					try
-					{
+					try {
 						$Response.Close()
 					}
-					catch
-					{
+					catch {
 						Add-Content -Value $_ -Path "$LogDirectory\debug.txt"
 					}
 				}	
 			}
 			
-			if ($DebugMode)
-			{	
+			if ($DebugMode) {	
 				# Invoke PoSH Server Multithread Process - Thread 1
 				Invoke-AsyncHTTPRequest -ScriptBlock $ScriptBlock -Listener $Listener -Hostname $Hostname -Hostnames $Hostnames -HomeDirectory $HomeDirectory -LogDirectory $LogDirectory -PoSHModulePath $PoSHModulePath -CustomChildConfig $CustomChildConfig -DebugMode | Out-Null
 				
@@ -906,8 +854,7 @@ function Start-SkatterTools {
 				# Invoke PoSH Server Multithread Process - Thread 3
 				Invoke-AsyncHTTPRequest -ScriptBlock $ScriptBlock -Listener $Listener -Hostname $Hostname -Hostnames $Hostnames -HomeDirectory $HomeDirectory -LogDirectory $LogDirectory -PoSHModulePath $PoSHModulePath -CustomChildConfig $CustomChildConfig -DebugMode | Out-Null
 			}
-			else
-			{
+			else {
 				# Invoke PoSH Server Multithread Process - Thread 1
 				Invoke-AsyncHTTPRequest -ScriptBlock $ScriptBlock -Listener $Listener -Hostname $Hostname -Hostnames $Hostnames -HomeDirectory $HomeDirectory -LogDirectory $LogDirectory -PoSHModulePath $PoSHModulePath -CustomChildConfig $CustomChildConfig | Out-Null
 				
@@ -922,21 +869,18 @@ function Start-SkatterTools {
 			$ShouldProcess = $true
 			
 			# Get Server Requests
-			while ($ShouldProcess)
-			{
+			while ($ShouldProcess) {
 				# PoSH Server Custom Configuration
 				$PoSHCustomConfigPath = $HomeDirectory + "\config.ps1"
 	
 				# Test Config Path
 				$TestPoSHCustomConfigPath = Test-Path $PoSHCustomConfigPath
 	
-				if (!$TestPoSHCustomConfigPath)
-				{			
+				if (!$TestPoSHCustomConfigPath) {			
 					# Import Config
 					. $PoSHModulePath\config.ps1
 				}
-				else
-				{
+				else {
 					# Import Config
 					. $HomeDirectory\config.ps1
 				}
@@ -979,8 +923,7 @@ function Start-SkatterTools {
 				
 				# Cookie Information
 				$PoSHCookies = $Request.Cookies["PoSHSessionID"];
-				if (!$PoSHCookies)
-				{
+				if (!$PoSHCookies) {
 					$PoSHCookie = New-Object Net.Cookie
 					$PoSHCookie.Name = "PoSHSessionID"
 					$PoSHCookie.Value = New-PoSHTimeStamp
@@ -988,28 +931,24 @@ function Start-SkatterTools {
 				}
 				
 				# Get Default Document
-				if ($File -notlike "*.*" -and $File -like "*/")
-				{
+				if ($File -notlike "*.*" -and $File -like "*/") {
 					$FolderPath = [System.IO.Directory]::GetCurrentDirectory() + $File
 					$RequstURL = [string]$Request.Url
 					$SubfolderName = $File
 					$File = $File + $DefaultDocument
 				}
-				elseif ($File -notlike "*.*" -and $File -notlike "*/")
-				{
+				elseif ($File -notlike "*.*" -and $File -notlike "*/") {
 					$FolderPath = [System.IO.Directory]::GetCurrentDirectory() + $File + "/"
 					$RequstURL = [string]$Request.Url + "/"
 					$SubfolderName = $File + "/"
 					$File = $File + "/" + $DefaultDocument 
 				}
-				else
-				{
+				else {
 					$FolderPath = $Null;
 				}
 				
 				# PoSH API Support
-				if ($File -like "*.psxml")
-				{
+				if ($File -like "*.psxml") {
 					$File = $File.Replace(".psxml",".ps1")
 					
 					# Full File Path
@@ -1018,8 +957,7 @@ function Start-SkatterTools {
 					# Get Mime Type
 					$MimeType = "text/psxml"
 				}
-				else
-				{
+				else {
 					# Full File Path
 					$File = [System.IO.Directory]::GetCurrentDirectory() + $File
 					
@@ -1032,63 +970,49 @@ function Start-SkatterTools {
 				. $PoSHModulePath\contentfiltering.ps1
 				
 				# Stream Content
-				if ([System.IO.File]::Exists($File) -and $ContentSessionDrop -eq "0" -and $IPSessionDrop -eq "0")  
-				{ 
-					if ($MimeType -eq "text/ps1")
-					{
-						try
-						{
+				if ([System.IO.File]::Exists($File) -and $ContentSessionDrop -eq "0" -and $IPSessionDrop -eq "0") { 
+					if ($MimeType -eq "text/ps1") {
+						try {
 							$Response.ContentType = "text/html"
 							$Response.StatusCode = [System.Net.HttpStatusCode]::OK
 							$LogResponseStatus = $Response.StatusCode
 							$Response = New-Object IO.StreamWriter($Response.OutputStream,[Text.Encoding]::UTF8)
 							$Response.WriteLine("$(. $File)")
 						}
-						catch
-						{
+						catch {
 							Add-Content -Value $_ -Path "$LogDirectory\debug.txt"
 						}
 					}
-					elseif ($MimeType -eq "text/psxml")
-					{
-						try
-						{
+					elseif ($MimeType -eq "text/psxml") {
+						try {
 							$Response.ContentType = "text/xml"
 							$Response.StatusCode = [System.Net.HttpStatusCode]::OK
 							$LogResponseStatus = $Response.StatusCode
 							$Response = New-Object IO.StreamWriter($Response.OutputStream,[Text.Encoding]::UTF8)
 							$Response.WriteLine("$(. $File)")
 						}
-						catch
-						{
+						catch {
 							Add-Content -Value $_ -Path "$LogDirectory\debug.txt"
 						}
 					}
-					elseif ($MimeType -eq "text/php")
-					{
-						try
-						{
-							if ($PHPCgiPath)
-							{
+					elseif ($MimeType -eq "text/php") {
+						try {
+							if ($PHPCgiPath) {
 								$TestPHPCgiPath = Test-Path -Path $PHPCgiPath
 							}
-							else
-							{
+							else {
 								$TestPHPCgiPath = $false
 							}
 							
-							if ($TestPHPCgiPath)
-							{
-								if ($File -like "C:\Windows\*")
-								{
+							if ($TestPHPCgiPath) {
+								if ($File -like "C:\Windows\*") {
 									$Response.ContentType = "text/html"
 									$Response.StatusCode = [System.Net.HttpStatusCode]::NotFound
 									$LogResponseStatus = $Response.StatusCode
 									$Response = New-Object IO.StreamWriter($Response.OutputStream,[Text.Encoding]::UTF8)
 									$Response.WriteLine("$(. $PoSHModulePath\phpsecurityerror.ps1)")
 								}
-								else
-								{
+								else {
 									$Response.ContentType = "text/html"
 									$PHPContentOutput = Get-PoSHPHPContent -PHPCgiPath "$PHPCgiPath" -File "$File" -PoSHPHPGET $PoSHQuery.PoSHQueryString -PoSHPHPPOST $PoSHPost.PoSHPostStream
 									$PHPContentOutput = Set-PHPEncoding -PHPOutput $PHPContentOutput
@@ -1098,8 +1022,7 @@ function Start-SkatterTools {
 									$Response.WriteLine("$PHPContentOutput")
 								}
 							}
-							else
-							{
+							else {
 								$Response.ContentType = "text/html"
 								$Response.StatusCode = [System.Net.HttpStatusCode]::NotFound
 								$LogResponseStatus = $Response.StatusCode
@@ -1107,15 +1030,12 @@ function Start-SkatterTools {
 								$Response.WriteLine("$(. $PoSHModulePath\phpcgierror.ps1)")						
 							}
 						}
-						catch
-						{
+						catch {
 							Add-Content -Value $_ -Path "$LogDirectory\debug.txt"
 						}
 					}				
-					else
-					{
-						try
-						{
+					else {
+						try {
 							$Response.ContentType = "$MimeType"
 							$FileContent = [System.IO.File]::ReadAllBytes($File)
 							$Response.ContentLength64 = $FileContent.Length
@@ -1123,35 +1043,27 @@ function Start-SkatterTools {
 							$LogResponseStatus = $Response.StatusCode
 							$Response.OutputStream.Write($FileContent, 0, $FileContent.Length)
 						}
-						catch
-						{
+						catch {
 							Add-Content -Value $_ -Path "$LogDirectory\debug.txt"
 						}
 					}
 				}
-				else
-				{
+				else {
 					# Content Filtering and IP Restriction Control
-					if ($ContentSessionDrop -eq "0" -and $IPSessionDrop -eq "0")
-					{
-						if ($FolderPath)
-						{
+					if ($ContentSessionDrop -eq "0" -and $IPSessionDrop -eq "0") {
+						if ($FolderPath) {
 							$TestFolderPath = Test-Path -Path $FolderPath
 						}
-						else
-						{
+						else {
 							$TestFolderPath = $false
 						}
 					}
-					else
-					{
+					else {
 						$TestFolderPath = $false
 					}
 					
-					if ($DirectoryBrowsing -eq "On" -and $TestFolderPath)
-					{
-						try
-						{
+					if ($DirectoryBrowsing -eq "On" -and $TestFolderPath) {
+						try {
 							$Response.ContentType = "text/html"
 							$Response.StatusCode = [System.Net.HttpStatusCode]::OK
 							$LogResponseStatus = $Response.StatusCode
@@ -1160,23 +1072,19 @@ function Start-SkatterTools {
 							$DirectoryContent = (Get-DirectoryContent -Path "$FolderPath" -HeaderName $HeaderName -RequestURL $RequestURL -SubfolderName $SubfolderName)
 							$Response.WriteLine("$DirectoryContent")
 						}
-						catch
-						{
+						catch {
 							Add-Content -Value $_ -Path "$LogDirectory\debug.txt"
 						}
 					}
-					else
-					{
-						try
-						{
+					else {
+						try {
 							$Response.ContentType = "text/html"
 							$Response.StatusCode = [System.Net.HttpStatusCode]::NotFound
 							$LogResponseStatus = $Response.StatusCode
 							$Response = New-Object IO.StreamWriter($Response.OutputStream,[Text.Encoding]::UTF8)
 							$Response.WriteLine("$(. $PoSHModulePath\notfound.ps1)")
 						}
-						catch
-						{
+						catch {
 							Add-Content -Value $_ -Path "$LogDirectory\debug.txt"
 						}
 					}
@@ -1186,12 +1094,10 @@ function Start-SkatterTools {
 				. $PoSHModulePath\log.ps1
 				
 				# Close Connection
-				try
-				{
+				try {
 					$Response.Close()
 				}
-				catch
-				{
+				catch {
 					Add-Content -Value $_ -Path "$LogDirectory\debug.txt"
 				}
 			}
