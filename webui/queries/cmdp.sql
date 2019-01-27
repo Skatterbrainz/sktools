@@ -55,7 +55,9 @@
 	TransferRate,
 	ISVString,
 	Flags,
-	MaintenanceMode,
+	case 
+		when (MaintenanceMode = 1) then 'Yes'
+		else 'No' end as MaintenanceMode,
 	RoleCapabilities
 FROM 
 	v_DistributionPoints
