@@ -48,7 +48,8 @@ switch ($Script:TabSelected) {
     }
     'Disks' {
         try {
-            $content = Get-SkWmiPropTableMultiple -ComputerName $Script:SearchValue -WmiClass "Win32_LogicalDisk" -Columns ('DeviceID','DriveType','VolumeName','Size','FreeSpace') -SortField "DeviceID"
+			$content = Get-SkWmiDiskInfo -ComputerName $SearchValue
+#            $content = Get-SkWmiPropTableMultiple -ComputerName $Script:SearchValue -WmiClass "Win32_LogicalDisk" -Columns ('DeviceID','DriveType','VolumeName','Size','FreeSpace') -SortField "DeviceID"
         }
         catch {
 			$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"

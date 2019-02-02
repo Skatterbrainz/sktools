@@ -4,7 +4,7 @@ if ($SkUseDashboard -eq "TRUE") {
 else {
 	$mainPage = "main.ps1"
 }
-
+$mainPage = "main.ps1"
 @"
 <!DOCTYPE html>
 <html>

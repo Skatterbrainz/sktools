@@ -13,6 +13,7 @@ if ($SkAdEnabled -ne 'false') {
 <button class="accordion" title="Active Directory">Active Directory</button>
 <div class="panel">
 	<ul class="ulmenu">
+		<li class="limenu"><a href="adratio.ps1" target="main" title="Dashboard">Dashboard</a></li>
 		<li class="limenu"><a href="adusers.ps1?f=username&tab=$SkTabSelectAdUsers" target="main" title="AD Users">Users</a></li>
 		<li class="limenu"><a href="adgroups.ps1?f=name&tab=$SkTabSelectAdGroups" target="main" title="AD Groups">Groups</a></li>
 		<li class="limenu"><a href="adcomputers.ps1?f=name&tab=$SkTabSelectAdComputers" target="main" title="AD Computers">Computers - All</a></li>
@@ -35,8 +36,9 @@ if ($SkCmEnabled -ne 'false') {
 <button class="accordion" title="Configuration Manager Assets">CM Assets</button>
 <div class="panel">
 	<ul class="ulmenu">
+		<li class="limenu"><a href="cmcovstatus.ps1" target="main" title="Coverage Status">Coverage Status</a></li>
 		<li class="limenu"><a href="cmusers.ps1?tab=$SkTabSelectCmUsers" title="Users" target="main">Users</a></li>
-		<li class="limenu"><a href="cmdevices.ps1?$SkTabSelectCmDevices" title="Devices" target="main">Devices - All</a></li>
+		<li class="limenu"><a href="cmdevices.ps1?tab=$SkTabSelectCmDevices" title="Devices" target="main">Devices - All</a></li>
 		<li class="limenu"><a href="cmdevices.ps1?f=OSType&v=Server&x=equals" title="Servers" target="main">Devices - Servers</a></li>
 		<li class="limenu"><a href="cmdevices.ps1?f=OSType&v=Workstation&x=equals" title="Workstations" target="main">Devices - Wkstns</a></li>
 		<li class="limenu"><a href="cmcollections.ps1?t=1" title="User Collections" target="main">User Collections</a></li>
@@ -64,6 +66,7 @@ if ($SkCmEnabled -ne 'false') {
 	<ul class="ulmenu">
         <li class="limenu"><a href="cmproducts.ps1" target="main" title="Software Products Inventory">Software Inventory</a></li>
         <li class="limenu"><a href="cmfiles.ps1" target="main" title="Software Files">Software Files</a></li>
+		<li class="limenu"><a href="cmhwclasses.ps1" target="main" title="Hardware Inventory Classes">HW Classes</a></li>
         <li class="limenu"><a href="skreports.ps1" target="main" title="Custom Reports">Custom Reports</a></li>
 	</ul>
 </div>

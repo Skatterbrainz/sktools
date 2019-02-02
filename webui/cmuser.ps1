@@ -27,6 +27,7 @@ switch ($Script:TabSelected) {
 			QueryFile  = "cmuserdevices.sql"
 			PageLink   = $pagelink 
 			Columns    = ('ComputerName','ProfilePath','TimeStamp','ResourceID','ADSite') 
+			Sorting    = 'ComputerName'
 			NoUnFilter = $True
 		}
 		$xxx = "queryfile: cmuserdevices.sql"

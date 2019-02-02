@@ -24,7 +24,7 @@ $params = @{
 	Columns    = ('UserName','DisplayName','Title','Department','LastLogon') 
 	SortColumn = "UserName" 
 	NoSortHeadings = $True
-	Diagnostics = $True
+	Diagnostics = $False
 }
 $content = Get-SkAdObjectTableMultiple @params
 

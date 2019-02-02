@@ -47,7 +47,7 @@ if (!(Get-Module dbatools)) {
     Import-Module dbatools 
 }
 
-$Global:SkToolsVersion = "1901.27.1"
+$Global:SkToolsVersion = "1902.1.0"
 
 function Import-SkConfig {
 	[CmdletBinding()]
@@ -112,6 +112,9 @@ function Get-SkQueryTableSingle {
             else {
                 $qpath  = $(Join-Path -Path $PSScriptRoot -ChildPath "queries")
                 $qfile  = $(Join-Path -Path $qpath -ChildPath "$QueryFile")
+				if (!(Test-Path $qfile)) {
+					throw "Error: unable to find qfile: $qfile (Get-SkQueryTableSingle) ($PageTitle)"
+				}
             }
             $result = @(Invoke-DbaQuery -SqlInstance $SkCmDbHost -Database "CM_$SkCmSiteCode" -File $qfile -ErrorAction Stop)
         }
@@ -196,7 +199,7 @@ function Get-SkQueryTableSingle2 {
                 $qpath    = $(Join-Path -Path $PSScriptRoot -ChildPath "queries")
                 $qfile    = $(Join-Path -Path $qpath -ChildPath "$QueryFile")
 				if (!(Test-Path $qfile)) {
-					throw "unable to find qfile: $qfile"
+					throw "Error: unable to find qfile: $qfile (Get-SkQueryTableMultiple) ($PageTitle)"
 				}
                 $laststep += "qfile located: $qfile"
             }
@@ -1679,9 +1682,11 @@ function Get-SkCmRowCount {
 		if ($Criteria -ne "") {
 			$query += " where ($Criteria)"
 		}
-        $output = (Invoke-DbaQuery -SqlInstance $Global:SkCmDbHost -Database "CM_$SkCmSiteCode" -Query $query) | Select -ExpandProperty 'Qty'
+        $output = (Invoke-DbaQuery -SqlInstance $SkCmDbHost -Database "CM_$SkCmSiteCode" -Query $query -ErrorAction SilentlyContinue) | Select -ExpandProperty 'Qty'
     }
-    catch {}
+    catch {
+		$output = "(Get-SkCmRowCount) Error: $($Error[0].Exception.Message)"
+	}
     finally {
         Write-Output $output
     }
@@ -2299,10 +2304,13 @@ function Get-SkWmiValue {
             }
             'DriveType' {
                 switch ($Value) {
+					1 { $output = 'NoRootDirectory'; break; }
                     2 { $output = 'Removable'; break }
                     3 { $output = 'Fixed'; break }
                     4 { $output = 'Network'; break }
-                    5 { $output = 'CD-ROM'; break }                
+                    5 { $output = 'CD-ROM'; break }
+					6 { $output = 'RAM Disk'; break }
+					default { $output = 'Unknown'; break }
                 }
                 break;
             }
@@ -2314,6 +2322,15 @@ function Get-SkWmiValue {
                 $output = "$([math]::Round(($Value / 1GB), 2)) GB"
                 break;
             }
+			'PowerManagementCapabilities' {
+				switch ($Value) {
+					1 { $output = 'Not Supported'; break }
+					2 { $output = 'Disabled'; break }
+					3 { $output = 'Enabled'; break }
+					default { $output = 'Unknown'; break }
+				}
+				break;
+			}
 			'Caption' {
 				if ($WmiClass -eq 'Win32_QuickFixEngineering') {
 					$output = "<a href=`"$Value`" target=`"_new`">$Value</a>"
@@ -2332,6 +2349,51 @@ function Get-SkWmiValue {
     Write-Output $output
 }
 
+function Get-SkWmiDiskInfo {
+    param (
+		[parameter(Mandatory=$True)]
+		[ValidateNotNullOrEmpty()]
+        [string] $ComputerName
+    )
+	$output = ""
+    try {
+        $disks = @(Get-WmiObject -Class Win32_LogicalDisk -ComputerName $ComputerName -ErrorAction SilentlyContinue)
+		$output = "<table id=table1>"
+		$output += "<tr><th>Drive</th><th>Label</th><th>Type</th><th>Size</th><th>Free</th><th>Used</th></tr>"
+        foreach ($disk in $disks) {
+            $driveID   = $disk.DeviceID
+            $driveType = $disk.DriveType
+			$diskType  = Get-SkWmiValue -PropName "DriveType" -WmiClass "Win32_LogicalDisk" -Value $driveType
+            $disksize  = [math]::Round($disk.Size / 1GB, 2)
+            $diskfree  = [math]::Round($disk.FreeSpace / 1GB, 2)
+            $disklabel = $disk.VolumeName
+            if ($disksize -gt 0) {
+                $diskused  = "$([math]::Round(($diskfree / $disksize) * 100, 2))`%"
+            }
+            else {
+				$disksize = "0.00"
+				$diskfree = "0.00"
+                $diskused = "0`%"
+            }
+			$output += "<tr>
+				<td>$driveID</td>
+				<td>$diskLabel</td>
+				<td>$diskType</td>
+				<td style=`"text-align:right`">$diskSize</td>
+				<td style=`"text-align:right`">$diskFree</td>
+				<td style=`"text-align:right`">$diskUsed</td>
+			</tr>"
+            #$output += "<tr><td>$(($driveID, $disklabel, $driveType, $disksize, $diskfree, $diskused) -join '</td><td>')</td></tr>"
+        }
+		$output += "<tr><td colspan=`"6`" class=`"lastrow`">$($disks.Count) disks found</td></tr></table>"
+    }
+    catch {
+		$output = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
+	}
+    finally {
+		Write-Output $output
+	}
+}
 function Get-SkWmiPropTableMultiple {
     param (
         [parameter(Mandatory=$True)]
@@ -2816,6 +2878,7 @@ function Get-SkRegValue {
 
 function Get-SkToolsInfo {
 	Write-Host "skattertools $Global:SkToolsVersion is loaded and ready. Don't get loaded at work!" -ForegroundColor Green
+	Write-Host "Remember kids: Don't do drugs.  That's the government's job" -ForegroundColor Green
 	Write-Host "Please read the license page for terms and other boring stuff (Sorry. No pictures)" -ForegroundColor Green
 }
 
