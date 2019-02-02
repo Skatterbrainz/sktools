@@ -42,10 +42,12 @@ The example below is the default file configuration after using ```Install-Skatt
 In most cases, you will want to change the SkCmDbHost, SkCmSMSProvider and SkCmSiteCode values.
 
 ```
-_Comment = SkatterTools configuration file. Created by Set-SkDefaults
-_LastUpdated = 01/20/2019 19:34:25
+_Comment = SkatterTools configuration file. Lines with underscore prefix are comments.
+_LastUpdated = 02/1/2019 10:56:54
+_ModuleVersion = 1902.1.0
 _UpdatedBy = sccmadmin
-_LocalHost = W10-CM-002
+_LocalHost = W10-CM-001
+_UserDomain = CONTOSO
 SkAPPNAME = SkatterTools
 SkTheme = stdark.css
 SkADEnabled = TRUE
@@ -55,7 +57,18 @@ SkCmDBHost = cm01.contoso.local
 SkCmSMSProvider = cm01.contoso.local
 SkCmSiteCode = P01
 SkCmCollectionManage = TRUE
-SkDebug = FALSE
+SkDebug = TRUE
+SkTabSelectAdUsers = All
+SkTabSelectAdGroups = All
+SkTabSelectAdComputers = All
+SkTabSelectCmFiles = A
+SkTabSelectCmUsers = All
+SkTabSelectCmDevices = All
+SkTabSelectCmDevColls = All
+SkTabSelectCmUserColls = All
+SkCmCollectionCheck = TRUE
+SkUseDashboard = TRUE
+SkToolsPath = C:\Users\sccmadmin\Documents
 ```
 
 # Testing Information
@@ -63,9 +76,9 @@ SkDebug = FALSE
 sktools was developed with PowerShell 5.1 (aka Windows PowerShell 5.1).  It was also tested with
 the following operating systems and products:
 
-* Windows 10 Enterprise x64 1803, 1809
+* Windows 10 Enterprise x64 1803, 1809, Insider 18323
 * Windows Server 2016 Enterprise, Datacenter Edition
-* System Center Configuration Manager 1810, 1812
+* System Center Configuration Manager 1810, 1812, 1901
 * SQL Server 2016, 2017
 * Internet Explorer 11
 * Microsoft Edge
