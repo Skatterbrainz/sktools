@@ -47,7 +47,7 @@ if (!(Get-Module dbatools)) {
     Import-Module dbatools 
 }
 
-$Global:SkToolsVersion = "1902.1.0"
+$Global:SkToolsVersion = "1902.3.1"
 
 function Import-SkConfig {
 	[CmdletBinding()]
@@ -1670,15 +1670,15 @@ function Get-SkCmRowCount {
 		[parameter(Mandatory=$True)]
 			[ValidateNotNullOrEmpty()]
 			[string] $TableName,
-		[parameter(Mandatory=$True)]
+		[parameter(Mandatory=$False)]
 			[ValidateNotNullOrEmpty()]
-			[string] $ColumnName,
+			[string] $ColumnName = "*",
 		[parameter(Mandatory=$False)]
 			[string] $Criteria = ""
 	)
 	$output = ""
 	try {
-		$query = "select count(*) as Qty from $TableName"
+		$query = "select count(distinct $ColumnName) as Qty from $TableName"
 		if ($Criteria -ne "") {
 			$query += " where ($Criteria)"
 		}

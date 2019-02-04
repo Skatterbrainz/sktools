@@ -36,7 +36,6 @@ if ($SkCmEnabled -ne 'false') {
 <button class="accordion" title="Configuration Manager Assets">CM Assets</button>
 <div class="panel">
 	<ul class="ulmenu">
-		<li class="limenu"><a href="cmcovstatus.ps1" target="main" title="Coverage Status">Coverage Status</a></li>
 		<li class="limenu"><a href="cmusers.ps1?tab=$SkTabSelectCmUsers" title="Users" target="main">Users</a></li>
 		<li class="limenu"><a href="cmdevices.ps1?tab=$SkTabSelectCmDevices" title="Devices" target="main">Devices - All</a></li>
 		<li class="limenu"><a href="cmdevices.ps1?f=OSType&v=Server&x=equals" title="Servers" target="main">Devices - Servers</a></li>
@@ -74,6 +73,8 @@ if ($SkCmEnabled -ne 'false') {
 <button class="accordion" title="Configuration Manager Monitoring">CM Monitoring</button>
 <div class="panel">
 	<ul class="ulmenu">
+		<li class="limenu"><a href="cmdashboard.ps1" target="main" title="Site Dashboard">Dashboard</a></li>
+		<li class="limenu"><a href="cmcovstatus.ps1" target="main" title="Coverage Status">Coverage Status</a></li>
 		<li class="limenu"><a href="cmsitestatus.ps1" target="main" title="Site Status">Site Status</a></li>
 		<li class="limenu"><a href="cmcompstat.ps1" target="main" title="Component Status">Site Components</a></li>
 		<li class="limenu"><a href="cmqueries.ps1" target="main" title="Queries">Queries</a></li>
