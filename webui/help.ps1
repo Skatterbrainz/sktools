@@ -48,37 +48,79 @@ $content = @"
             release, so keep that in mind.</p>
 
             <p>Once you've downloaded this garbage and extracted it into a folder somewhere, you should 
-            find a file in that folder named "config.txt".  Open that in your favorite text editor. 
+            find a file in that folder named "skconfig.txt".  Open that in your favorite text editor. 
             Modify the settings to suit your needs.  After saving the changes, restart the PoSH Server instance.</p>
 
             <h2>Options and Variables</h2>
+			
+			<table id=table2>
+				<tr><th>Key Name</th><th>Description</th></tr>
+				<tr><td>_ (underscore prefix) items</td><td>These are comments which are ignored during processing</td></tr>
+				<tr><td>SkAPPNAME</td><td>This is the name on the app banner (e.g. SkatterTools)</td></tr>
+				<tr><td>SkTheme</td><td>The CSS style theme setting.  Only 2 are provided right now: stdark.css, stlight.css</td></tr>
+				<tr><td>SkADEnabled</td><td>Enable AD features (default = TRUE)</td></tr>
+				<tr><td>SkADGroupManage</td><td>Enable AD Group membership changes (default = TRUE)</td></tr>
+				<tr><td>SkCMEnabled</td><td>Enable ConfigMgr features (default = TRUE)</td></tr>
+				<tr><td>SkCmDBHost</td><td>The ConfigMgr SQL Server hostname (FQDN)</td></tr>
+				<tr><td>SkCmSMSProvider</td><td>The ConfigMgr site SMS Provider hostname (FQDN)</td></tr>
+				<tr><td>SkCmSiteCode</td><td>The ConfigMgr Site Code</td></tr>
+				<tr><td>SkCmCollectionManage</td><td>Enable ConfigMgr device and user collection membership changes (default = TRUE)</td></tr>
+				<tr><td>SkDebug</td><td>Enable SkatterTools debug features within console pages (default = FALSE)</td></tr>
+				<tr><td>SkTabSelectAdUsers</td><td>Default tab selection for AD Users page (default = A)</td></tr>
+				<tr><td>SkTabSelectAdGroups</td><td>Default tab selection for AD Groups (default = A)</td></tr>
+				<tr><td>SkTabSelectAdComputers</td><td>Default tab selection for AD Computers (default = A)</td></tr>
+				<tr><td>SkTabSelectCmFiles</td><td>Default tab selection for ConfigMgr Files (default = A)</td></tr>
+				<tr><td>SkTabSelectCmUsers</td><td>Default tab selection for ConfigMgr Users (default = A)</td></tr>
+				<tr><td>SkTabSelectCmDevices</td><td>Default tab selection for ConfigMgr Devices (default = A)</td></tr>
+				<tr><td>SkTabSelectCmDevColls</td><td>Default tab selection for ConfigMgr Device Collections (default = A)</td></tr>
+				<tr><td>SkTabSelectCmUserColls</td><td>Default tab selection for ConfigMgr User Collections (default = A)</td></tr>
+				<tr><td>SkCmCollectionCheck</td><td>Restrict ConfigMgr collection changes to direct-rule collections (default = TRUE)</td></tr>
+				<tr><td>SkToolsPath</td><td>Reserved for future use</td></tr>
+			</table>
 
-            <ul>
-                <li>AppName = The name of this app, which is currently $Global:AppName</li>
-                <li>STTheme = CSS stylesheet theme to apply. (stdark.css or stlight.css)</li>
-                <li>CMEnabled = Enable Configuration Manager features (true or false)</li>
-                <li>ADenabled = Enable Active Directory features (true or false)</li>
-                <li>ADGroupManage = Enable features to modify AD group memberships</li>
-                <li>CMCollectionManage = Enable features to modify Collection memberships</li>
-                <li>CmDBHost = Configuration Manager SQL Server hostname</li>
-                <li>CmSMSProvider = Configuration Manager SMS Provider hostname</li>
-                <li>CmSiteCode = Configuration Manager site code</li>
-                <li>DefaultGroupsTab = Default menubar index tab for Groups</li>
-                <li>DefaultUsersTab = Default menubar index tab for Users</li>
-                <li>DefaultComputersTab = Default menubar index tab for Computers/Devices</li>
-            </ul>
-
-            <p>NOTE: Always keep a copy of your config.txt file somewhere, in case you download a new
+            <p>NOTE: Always keep a copy of your skconfig.txt file somewhere, in case you download a new
             update and it whacks your existing copy.  <a href="https://www.merriam-webster.com/dictionary/whack">Whacks</a> 
             is a real word. I looked it up. Don't confuse "wax" with "whacks".  You can "wax on" and "wax off", but if you 
             get caught doing a "whacks off" you might end up in jail.</p>
 
-            <p>If you modify config.txt, you will need to stop and start the PoSH Server process again.</p>
+            <p>If you modify skconfig.txt, you will need to stop and start the PoSH Server process again.</p>
 
-            <p>Stay tuned.  More to come!</p>
-
+            <h2>System Requirements</h2>
+			
+			<p>The sktools module requires PowerShell 5.1, and a domain-joined computer host running Windows 7, 8.1 or 10.</p>
+			
+			<p>Sktools has been tested with Windows Server 2016, Windows 10 Enterprise 1803, Windows 10 Professional 1803, and browsers 
+			such as Firefox, Google Chrome, Internet Explorer, Edge, and Brave.</p>
         </td>
     </tr>
+	<tr>
+		<td>
+			<h2>Active Directory</h2>
+			
+			<p>Active Directory features include browsing, and searching User accounts, Security Groups, Computer Accounts, 
+			AD Sites and Site Links, Domain Controllers and FSMO roles, Domain policies, Forest properties and more.</p>
+			
+			<p>In addition to browse and search, you can add or remove User accounts in Security Groups, inspect local machine
+			properties of remote AD Computers, and perform remote tasks against remote Computers such as GPUPDATE, Restart and more.</p>
+			
+			<p>The AD features in SkatterTools have been tested with environments on Windows Server 2008, 2008 R2, 2012, 2012 R2 and 2016.
+			The SkatterTools (sktools) module itself requires a supported runtime host (see Requirements above).</p>
+
+			<p>Note: If SkADEnabled is set to FALSE, the Active Directory features will not be displayed at all.</p>
+
+		</td>
+	</tr>
+	<tr>
+		<td>
+			<h2>Configuration Manager</h2>
+			
+			<p>Similar to the Active Directory features described above, the same is provided for System Center Configuration Manager 
+			site hierarchies.</p>
+			
+			<p>Note: If SkCMEnabled is set to FALSE, the ConfigMgr features will not be displayed at all.</p>
+			
+		</td>
+	</tr>
 </table>
 "@
 

@@ -2,7 +2,7 @@
 if ([string]::IsNullOrEmpty($Script:TabSelected)) {
 	if (![string]::IsNullOrEmpty($SkTabSelectAdComputers)) {
 		$TabSelected = $SkTabSelectAdComputers
-		$Script:SearchValue = $TabSelected
+		$SearchValue = $TabSelected
 	}
 }
 
@@ -15,16 +15,22 @@ $menulist = ""
 $tabset   = ""
 $pagelink = Split-Path -Leaf $MyInvocation.MyCommand.Definition
 
-$tabset  = Write-SkMenuTabSetAlphaNumeric -BaseLink "$pagelink`?x=begins&f=name&v=" -DefaultID $TabSelected
-$params = @{
-	ObjectType  = 'computer' 
-	FieldName   = $SearchField
-	Value       = $SearchValue
-	Columns     = ('Name','OS','OSver','OSType','LastLogon') 
-	SortColumn  = "Name"
-	NoSortHeadings = $True
+try {
+	$tabset = Write-SkMenuTabSetAlphaNumeric -BaseLink "$pagelink`?x=begins&f=name&v=" -DefaultID $TabSelected
+	$params = @{
+		ObjectType  = 'computer' 
+		FieldName   = $SearchField
+		Value       = $SearchValue
+		Columns     = ('Name','OS','OSver','OSType','LastLogon') 
+		SortColumn  = "Name"
+		NoSortHeadings = $True
+	}
+	$content = Get-SkAdObjectTableMultiple @params
 }
-$content = Get-SkAdObjectTableMultiple @params
-$content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
-
-Write-SkWebContent
+catch {
+	$content = "<table id=table2><tr><td>Error: $($Error[0].Exception.Message)</td></tr></table>"
+}
+finally {
+	$content += Write-SkDetailView -PageRef $pagelink -Mode $Detailed
+	Write-SkWebContent
+}

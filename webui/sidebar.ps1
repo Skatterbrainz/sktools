@@ -13,19 +13,19 @@ if ($SkAdEnabled -ne 'false') {
 <button class="accordion" title="Active Directory">Active Directory</button>
 <div class="panel">
 	<ul class="ulmenu">
-		<li class="limenu"><a href="adratio.ps1" target="main" title="Dashboard">Dashboard</a></li>
+		<li class="limenu"><a href="addashboard.ps1" target="main" title="Dashboard">Dashboard</a></li>
 		<li class="limenu"><a href="adusers.ps1?f=username&tab=$SkTabSelectAdUsers" target="main" title="AD Users">Users</a></li>
 		<li class="limenu"><a href="adgroups.ps1?f=name&tab=$SkTabSelectAdGroups" target="main" title="AD Groups">Groups</a></li>
 		<li class="limenu"><a href="adcomputers.ps1?f=name&tab=$SkTabSelectAdComputers" target="main" title="AD Computers">Computers - All</a></li>
 		<li class="limenu"><a href="adcomputers.ps1?f=OSType&v=Server&x=equals&tab=$SkTabSelectAdComputers" target="main" title="AD Servers">Computers - Servers</a></li>
 		<li class="limenu"><a href="adcomputers.ps1?f=OSType&v=Domain Controller&x=equals&tab=$SkTabSelectAdComputers" target="main" title="AD Domain Controllers">Computers - DCs</a></li>
 		<li class="limenu"><a href="adcomputers.ps1?f=OSType&v=Workstation&x=equals&tab=$SkTabSelectAdComputers" target="main" title="AD Workstations">Computers - Wkstns</a></li>
+		<li class="limenu"><a href="addcs.ps1" target="main" title="Domain Controllers Summary">Domain Controllers</a></li>
 		<li class="limenu"><a href="adforest.ps1" target="main" title="AD Forest">Forest</a></li>
         <li class="limenu"><a href="addomain.ps1" target="main" title="AD Domain">Domain</a></li>
 		<li class="limenu"><a href="adsites.ps1" target="main" title="AD Sites">Sites</a></li>
 		<li class="limenu"><a href="adsitelinks.ps1" target="main" title="AD Site Links">Site Links</a></li>
 		<li class="limenu"><a href="adbrowser.ps1" target="main" title="AD OU Explorer">OU Explorer</a></li>
-        <li class="limenu"><a href="adreps.ps1" target="main">AD Reports</a></li>
 	</ul>
 </div>
 "@
@@ -108,6 +108,7 @@ $content += @"
 <div class="panel">
 	<ul class="ulmenu">
 		<li class="limenu"><a href="https://docs.microsoft.com/en-us/sccm/" target="_new" title="ConfigMgr Docs">ConfigMgr Docs</a></li>
+		<li class="limenu"><a href="https://dbatools.io" target="_new" title="dbatools project">DBATools</a></li>
 		<li class="limenu"><a href="downloads.ps1" target="main" title="Downloads">Downloads</a></li>
 		<li class="limenu"><a href="learning.ps1" target="main" title="Learning">Learning</a></li>
         <li class="limenu"><a href="acknowledgements.ps1" target="main" title="Acknowledgements">Acknowledgements</a></li>
@@ -119,7 +120,8 @@ $content += @"
 	<ul class="ulmenu">
         <li class="limenu"><a href="settings.ps1" target="main" title="Settings">Settings</a></li>
 		<li class="limenu"><a href="help.ps1" target="main" title="SkatterTools Help">SkatterTools Help</a></li>
-		<li class="limenu"><a href="https://github.com/Skatterbrainz/SkatterTools" target="_new" title="Check for Update">Check for Update</a></li>
+		<li class="limenu"><a href="https://github.com/Skatterbrainz/sktools" target="_new" title="GitHub Repo">Project Site</a></li>
+		<li class="limenu"><a href="https://www.powershellgallery.com/packages/sktools" target="_new" title="PS Gallery">PowerShell Gallery</a></li>
 		<li class="limenu"><a href="about.ps1" target="main" title="About">About</a></li>
     </ul>
 </div>

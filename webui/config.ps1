@@ -47,7 +47,7 @@ if (!(Get-Module dbatools)) {
     Import-Module dbatools 
 }
 
-$Global:SkToolsVersion = "1902.3.1"
+$Global:SkToolsVersion = "1902.5.1"
 
 function Import-SkConfig {
 	[CmdletBinding()]
@@ -1122,7 +1122,12 @@ function Get-SkValueLinkAD {
                 break;
             }
             'LastLogon' {
-                $output = "$Value `($($(New-TimeSpan -Start $Value -End (Get-Date)).Days)` days)"
+				if (([datetime]$Value).Year -eq 1600) {
+					$output = "Never"
+				}
+				else {
+					$output = "$Value `($($(New-TimeSpan -Start $Value -End (Get-Date)).Days)` days)"
+				}
                 break;
             }
             'Email' {

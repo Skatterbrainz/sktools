@@ -25,9 +25,12 @@ a:visited {color: #c0c0c0; text-decoration: none;}
 a:hover   {color: #2E86C1; text-decoration: underline;}
 a:active  {color: darkred;}
 
-h1,h2,h3 {
+h1,h2,h3,h4 {
 	font-family: arial,helvetica;
 	color: #2E86C1;
+}
+h4 {
+	font-size: 11pt;
 }
 
 .accordion {

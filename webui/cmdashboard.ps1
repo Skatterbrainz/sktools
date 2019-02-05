@@ -29,7 +29,7 @@ try {
 	$cs = Get-WmiObject -Class Win32_ComputerSystem -ComputerName $SkCmSmsProvider -ErrorAction SilentlyContinue
 	$os = Get-WmiObject -Class Win32_OperatingSystem -ComputerName $SkCmSmsProvider -ErrorAction SilentlyContinue
 	$tm = [math]::Round((($cs | select -ExpandProperty TotalPhysicalMemory) / 1GB),2)
-	$dsa = Get-DbaComputerSystem -ComputerName "cm02"
+	$dsa = Get-DbaComputerSystem -ComputerName $SkCmDbHost
 	$logprocs = $dsa.NumberLogicalProcessors
 	$content += "<tr>"
 	$content += "<td>$($cs.Model)</td>"
@@ -96,7 +96,6 @@ try {
 			}
 			else {
 				$pctable = "<table id=table3><tr><td style=`"width:$pct%;background-color:lightgreen`">&nbsp;</td><td style=`"background-color:none`"> $pct`%</td></tr></table>"
-				#$pctable = "<table id=tablex style=`"width:$pct%`"><tr><td style=`"background-color:lightblue`">&nbsp;</td></tr></table> $pct`%"
 			}
 		}
 		else {
@@ -106,7 +105,6 @@ try {
 			$dfree = 0
 			$pctable = "<table id=table3><tr><td style=`"background-color:none`">&nbsp;</td></tr></table>"
 		}
-		#$pct   = $dused / $dsize
 		$content += "<tr>"
 		$content += "<td>$($d.DeviceID)</td>"
 		$content += "<td>$($d.VolumeName)</td>"
@@ -129,7 +127,7 @@ $content += "<h2>SQL Server Health</h2>
 <tr><th>Install Date</th><th>Version</th><th>Update</th><th>MemoryAlloc</th><th>DBFilePaths</th></tr>"
 try {
 	$sqlinst  = ((Get-DbaServerInstallDate -SqlInstance $SkCmDbHost -ErrorAction SilentlyContinue).SqlInstallDate).Date
-	$sqlmem   = Get-DbaMaxMemory -SqlInstance "cm02" -ErrorAction SilentlyContinue
+	$sqlmem   = Get-DbaMaxMemory -SqlInstance $SkCmDbHost -ErrorAction SilentlyContinue
 	$totalmem = $sqlmem.Total
 	$allocmem = [math]::Round(($sqlmem.MaxValue / 1GB),2)
 	$allocpct = $([math]::Round(($allocmem / $tm),2)) * 100
@@ -204,6 +202,23 @@ try {
 }
 catch {
 	$content += "<table id=table2><tr><td>Information is not accessible at this time</td></tr></table>"
+}
+
+try {
+	$dbf = Get-DbaDbFile -SqlInstance $SkCmDbHost -Database "CM_$SkCmSiteCode" -ErrorAction SilentlyContinue
+	$content += "<h3>SQL Database Files (CM_$SkCmSiteCode)</h3>"
+	$counter = 1
+	foreach ($df in $dbf) {
+		$content += "<h4>Database File $counter</h4>"
+		$content += "<table id=table2>"
+		$df.psobject.Properties | %{
+			$content += "<tr><td class=t2td1>$($_.Name)</td><td class=t2td2>$($_.Value)</td></tr>"
+		}
+		$content += "</table>"
+		$counter++
+	}
+}
+catch {
 }
 
 Write-SkWebContent
