@@ -11,11 +11,10 @@ SkatterTools PowerShell Module
 
   1. Open a PowerShell console using "Run as Administrator"
   2. Install module: ```Install-Module sktools```
-  3. Import module: ```Import-Module sktools```
-  4. Run ```Install-SkatterTools``` function
-  5. Edit the "skconfig.txt" file under your Documents folder
-  6. In the PowerShell console, type ```Start-SkatterTools``` (minimize console)
-  7. Open your web browser, go to http://localhost:8080
+  3. Run ```Install-SkatterTools``` function
+  4. Edit the "skconfig.txt" file under your Documents folder
+  5. In the PowerShell console, type ```Start-SkatterTools``` (minimize console)
+  6. Open your web browser, go to http://localhost:8080
 
 # Updating the Module
 
