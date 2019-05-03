@@ -2,6 +2,9 @@
 
 SkatterTools PowerShell Module
 
+## The sktools project is not under active development.
+The repository remains available for reference and pull requests will be considered, but no active work is being done on this project.
+
 # Overview
 
   SkatterTools is a PowerShell module which provides an extension to PoSHServer to view and manage
